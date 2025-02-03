@@ -1,18 +1,8 @@
 <template>
-  <div 
-    class="text-block relative group"
-    :class="{ 'is-dragging': dragState.isDragging }"
-    draggable="true"
-    @dragstart="onDragStart($event)"
-    @dragend="onDragEnd"
-  >
-    <BlockControls 
-      v-if="!isInsideColumn"
-      :index="index"
-      :is-last="isLast"
-      @move="handleMove"
-      @duplicate="$emit('duplicate')"
-    />
+  <div class="text-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
+    @dragstart="onDragStart($event)" @dragend="onDragEnd">
+    <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
+      @duplicate="$emit('duplicate')" />
 
     <DeleteBlockButton @delete="$emit('remove')" />
 
@@ -20,24 +10,15 @@
       <div class="block-header flex items-center mb-2">
         <div class="block-type text-sm text-gray-500">Текстовый блок</div>
       </div>
-      
-      <FormatToolbar
-        :current-alignment="currentAlignment"
-        :current-color="currentColor"
-        @format-text="formatText"
-        @set-alignment="setAlignment"
-        @apply-color="applyColor"
-      />
-      
-      <div
-        ref="editor"
-        contenteditable="true"
+
+      <FormatToolbar :current-alignment="currentAlignment" :current-color="currentColor" @format-text="formatText"
+        @set-alignment="setAlignment" @apply-color="applyColor" />
+
+      <div ref="editor" contenteditable="true"
         class="editor-content w-full p-2 border rounded transition-colors duration-200"
         :class="{ 'border-blue-400': dragState.isDragging }"
-        :style="{ textAlign: currentAlignment, color: currentColor }"
-        @input="handleInput"
-        placeholder="Введите текст..."
-      ></div>
+        :style="{ textAlign: currentAlignment, color: currentColor }" @input="handleInput"
+        placeholder="Введите текст..."></div>
     </div>
   </div>
 </template>
@@ -50,13 +31,13 @@ import FormatToolbar from '@/components/shared/FormatToolbar.vue'
 
 export default {
   name: 'TextBlock',
-  
+
   components: {
     DeleteBlockButton,
     BlockControls,
     FormatToolbar
   },
-  
+
   mixins: [dragdrop],
 
   props: {
@@ -96,7 +77,7 @@ export default {
   mounted() {
     this.$refs.editor.innerHTML = this.content;
   },
-  
+
   methods: {
     handleMove(direction) {
       const fromIndex = this.index
@@ -187,7 +168,7 @@ export default {
   directives: {
     clickOutside: {
       mounted(el, binding) {
-        el.clickOutsideEvent = function(event) {
+        el.clickOutsideEvent = function (event) {
           if (!(el === event.target || el.contains(event.target))) {
             binding.value(event)
           }
@@ -210,7 +191,6 @@ export default {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Добавляем стили для анимации BlockControls */
 .text-block:not(.is-inside-column) :deep(.block-controls) {
   opacity: 0;
   transform: translateX(10px);
@@ -236,7 +216,6 @@ export default {
   outline: none;
 }
 
-/* Отдельные стили для кнопки удаления */
 .text-block :deep(.delete-button) {
   opacity: 0;
   transition: opacity 0.2s ease-in-out;

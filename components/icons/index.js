@@ -18,7 +18,6 @@ export { default as ChevronDownIcon } from './ChevronDownIcon.vue'
 export { default as DuplicateIcon } from './DuplicateIcon.vue'
 export { default as DotsVerticalIcon } from './DotsVerticalIcon.vue'
 
-// Теперь используем импортированные компоненты
 export default {
   BaseIcon,
   DragIcon,

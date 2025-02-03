@@ -2,19 +2,11 @@
   <div class="columns-block mb-4">
     <div class="grid grid-cols-2 gap-4">
       <div class="left-column">
-        <PreviewBlock
-          v-for="(block, index) in parsedContent.left"
-          :key="`left-${index}`"
-          :block="block"
-        />
+        <PreviewBlock v-for="(block, index) in parsedContent.left" :key="`left-${index}`" :block="block" />
       </div>
 
       <div class="right-column">
-        <PreviewBlock
-          v-for="(block, index) in parsedContent.right"
-          :key="`right-${index}`"
-          :block="block"
-        />
+        <PreviewBlock v-for="(block, index) in parsedContent.right" :key="`right-${index}`" :block="block" />
       </div>
     </div>
   </div>
@@ -23,7 +15,7 @@
 <script>
 export default {
   name: 'PreviewColumnsBlock',
-  
+
   props: {
     content: {
       type: [String, Object],
@@ -44,4 +36,4 @@ export default {
     }
   }
 }
-</script> 
+</script>

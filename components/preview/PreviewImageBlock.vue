@@ -1,15 +1,8 @@
 <template>
   <div class="preview-image-block">
     <figure v-if="imageContent.url">
-      <img 
-        :src="imageContent.url" 
-        class="max-w-full"
-        alt=""
-      >
-      <figcaption 
-        v-if="imageContent.caption"
-        class="text-center text-gray-600 mt-2"
-      >
+      <img :src="imageContent.url" class="max-w-full" alt="">
+      <figcaption v-if="imageContent.caption" class="text-center text-gray-600 mt-2">
         {{ imageContent.caption }}
       </figcaption>
     </figure>
@@ -19,7 +12,7 @@
 <script>
 export default {
   name: 'PreviewImageBlock',
-  
+
   props: {
     content: {
       type: [String, Object],
@@ -32,7 +25,7 @@ export default {
 
   computed: {
     imageContent() {
-      return typeof this.content === 'string' 
+      return typeof this.content === 'string'
         ? { url: '', caption: '' }
         : this.content
     }
@@ -45,4 +38,4 @@ export default {
   max-height: 600px;
   object-fit: contain;
 }
-</style> 
+</style>

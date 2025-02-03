@@ -1,29 +1,14 @@
 <template>
   <div class="formatting-toolbar flex items-center gap-2 mb-2 p-2 bg-white rounded-lg border shadow-sm">
     <div class="flex gap-1" v-if="hasTextFormatting">
-      <button
-        v-for="format in textFormats"
-        :key="format.command"
-        @click="formatText(format.command)"
-        class="toolbar-btn"
-        :class="{ 'active': activeStates[format.command] }"
-        :title="format.title"
-      >
-        <svg 
-          class="w-4 h-4" 
-          fill="none" 
-          :stroke="activeStates[format.command] ? currentColor : 'currentColor'" 
-          viewBox="0 0 24 24"
-        >
+      <button v-for="format in textFormats" :key="format.command" @click="formatText(format.command)"
+        class="toolbar-btn" :class="{ 'active': activeStates[format.command] }" :title="format.title">
+        <svg class="w-4 h-4" fill="none" :stroke="activeStates[format.command] ? currentColor : 'currentColor'"
+          viewBox="0 0 24 24">
           <g v-if="format.command === 'underline'">
             <path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3"></path>
-            <line 
-              x1="4" 
-              y1="21" 
-              x2="20" 
-              y2="21"
-              :stroke="activeStates[format.command] ? currentColor : 'currentColor'"
-            ></line>
+            <line x1="4" y1="21" x2="20" y2="21" :stroke="activeStates[format.command] ? currentColor : 'currentColor'">
+            </line>
           </g>
           <g v-else v-html="format.icon"></g>
         </svg>
@@ -33,14 +18,8 @@
     <div class="h-4 w-px bg-gray-200" v-if="hasTextFormatting && hasAlignment"></div>
 
     <div class="flex gap-1" v-if="hasAlignment">
-      <button
-        v-for="align in alignments"
-        :key="align.value"
-        @click="setAlignment(align.value)"
-        class="toolbar-btn"
-        :class="{ 'active': currentAlignment === align.value }"
-        :title="align.title"
-      >
+      <button v-for="align in alignments" :key="align.value" @click="setAlignment(align.value)" class="toolbar-btn"
+        :class="{ 'active': currentAlignment === align.value }" :title="align.title">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" v-html="align.icon"></svg>
       </button>
     </div>
@@ -48,34 +27,20 @@
     <div class="h-4 w-px bg-gray-200" v-if="hasAlignment && hasColorPicker"></div>
 
     <div class="relative" v-if="hasColorPicker">
-      <button
-        @click.stop="showColorPicker = !showColorPicker"
-        class="toolbar-btn flex items-center gap-1"
-        title="Цвет текста"
-      >
-        <div 
-          class="w-4 h-4 rounded-sm border border-gray-200" 
-          :style="{ backgroundColor: currentColor }"
-        ></div>
+      <button @click.stop="showColorPicker = !showColorPicker" class="toolbar-btn flex items-center gap-1"
+        title="Цвет текста">
+        <div class="w-4 h-4 rounded-sm border border-gray-200" :style="{ backgroundColor: currentColor }"></div>
         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M7 10l5 5 5-5z"/>
+          <path d="M7 10l5 5 5-5z" />
         </svg>
       </button>
-      
-      <div 
-        v-show="showColorPicker"
-        class="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border z-50 w-[200px]"
-      >
+
+      <div v-show="showColorPicker"
+        class="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border z-50 w-[200px]">
         <div class="p-2">
           <div class="grid grid-cols-5 gap-2">
-            <button
-              v-for="color in colors"
-              :key="color.hex"
-              @click.stop="applyColor(color.hex)"
-              class="color-btn"
-              :style="{ backgroundColor: color.hex }"
-              :title="color.name"
-            ></button>
+            <button v-for="color in colors" :key="color.hex" @click.stop="applyColor(color.hex)" class="color-btn"
+              :style="{ backgroundColor: color.hex }" :title="color.name"></button>
           </div>
         </div>
       </div>
@@ -86,7 +51,7 @@
 <script>
 export default {
   name: 'FormatToolbar',
-  
+
   props: {
     hasTextFormatting: {
       type: Boolean,
@@ -204,13 +169,13 @@ export default {
 
   mounted() {
     this.updateActiveStates();
-    
+
     document.addEventListener('selectionchange', this.updateActiveStates);
-    
+
     const observer = new MutationObserver(() => {
       this.updateActiveStates();
     });
-    
+
     if (this.$parent.$refs.editor) {
       observer.observe(this.$parent.$refs.editor, {
         childList: true,
@@ -218,7 +183,7 @@ export default {
         characterData: true
       });
     }
-    
+
     this.$once('hook:destroyed', () => {
       document.removeEventListener('selectionchange', this.updateActiveStates);
       observer.disconnect();
@@ -246,4 +211,4 @@ export default {
   transform: scale(1.15);
   box-shadow: 0 0 0 2px white, 0 0 0 4px currentColor;
 }
-</style> 
+</style>

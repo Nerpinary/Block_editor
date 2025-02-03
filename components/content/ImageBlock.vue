@@ -1,18 +1,8 @@
 <template>
-  <div 
-    class="image-block relative group"
-    :class="{ 'is-dragging': dragState.isDragging }"
-    draggable="true"
-    @dragstart="onDragStart($event)"
-    @dragend="onDragEnd"
-  >
-    <BlockControls 
-      v-if="!isInsideColumn"
-      :index="index"
-      :is-last="isLast"
-      @move="handleMove"
-      @duplicate="$emit('duplicate')"
-    />
+  <div class="image-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
+    @dragstart="onDragStart($event)" @dragend="onDragEnd">
+    <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
+      @duplicate="$emit('duplicate')" />
 
     <DeleteBlockButton @delete="$emit('remove')" />
 
@@ -22,27 +12,14 @@
       </div>
 
       <div class="image-container relative">
-        <div 
-          class="min-h-[200px] flex items-center justify-center border-2 border-dashed rounded cursor-pointer"
+        <div class="min-h-[200px] flex items-center justify-center border-2 border-dashed rounded cursor-pointer"
           :class="{
             'border-gray-300': !imageContent.url,
             'border-blue-400': imageContent.url
-          }"
-          @click="triggerFileInput"
-        >
-          <input
-            type="file"
-            ref="fileInput"
-            class="hidden"
-            accept="image/*"
-            @change="handleFileChange"
-          >
+          }" @click="triggerFileInput">
+          <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleFileChange">
           <template v-if="imageContent.url">
-            <img 
-              :src="imageContent.url" 
-              class="max-w-full max-h-[400px] object-contain"
-              alt=""
-            >
+            <img :src="imageContent.url" class="max-w-full max-h-[400px] object-contain" alt="">
           </template>
           <template v-else>
             <div class="text-gray-500">
@@ -52,13 +29,8 @@
         </div>
       </div>
 
-      <input 
-        v-if="imageContent.url"
-        v-model="imageContent.caption"
-        class="mt-2 w-full border-none bg-transparent"
-        placeholder="Подпись к изображению..."
-        @input="updateContent"
-      >
+      <input v-if="imageContent.url" v-model="imageContent.caption" class="mt-2 w-full border-none bg-transparent"
+        placeholder="Подпись к изображению..." @input="updateContent">
     </div>
   </div>
 </template>
@@ -70,12 +42,12 @@ import BlockControls from '@/components/shared/BlockControls.vue'
 
 export default {
   name: 'ImageBlock',
-  
+
   components: {
     DeleteBlockButton,
     BlockControls
   },
-  
+
   mixins: [dragdrop],
 
   props: {
@@ -118,7 +90,7 @@ export default {
 
   computed: {
     imageContent() {
-      return typeof this.content === 'string' 
+      return typeof this.content === 'string'
         ? { url: '', caption: '' }
         : { ...this.content };
     }
@@ -151,11 +123,11 @@ export default {
             url: e.target.result,
             caption: this.imageContent.caption
           };
-          
+
           this.imageContent = { ...newContent };
-          
+
           this.$emit('update:content', newContent);
-          
+
           this.$refs.fileInput.value = '';
         };
         reader.onerror = () => {
@@ -169,15 +141,15 @@ export default {
     },
 
     updateContent(newContent) {
-      const updatedContent = newContent.url 
-        ? newContent 
+      const updatedContent = newContent.url
+        ? newContent
         : {
-            url: this.imageContent.url,
-            caption: newContent.caption || this.imageContent.caption
-          };
-      
+          url: this.imageContent.url,
+          caption: newContent.caption || this.imageContent.caption
+        };
+
       this.imageContent = { ...updatedContent };
-      
+
       this.$emit('update:content', updatedContent);
     },
 

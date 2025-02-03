@@ -1,49 +1,25 @@
 <template>
-  <div 
-    class="heading-block relative group"
-    :class="{ 'is-dragging': dragState.isDragging }"
-    draggable="true"
-    @dragstart="onDragStart($event)"
-    @dragend="onDragEnd"
-  >
-    <BlockControls 
-      v-if="!isInsideColumn"
-      :index="index"
-      :is-last="isLast"
-      @move="handleMove"
-      @duplicate="$emit('duplicate')"
-    />
-    
+  <div class="heading-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
+    @dragstart="onDragStart($event)" @dragend="onDragEnd">
+    <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
+      @duplicate="$emit('duplicate')" />
+
     <DeleteBlockButton @delete="$emit('remove')" />
 
     <div class="block-content">
       <div class="block-header flex items-center mb-2">
         <div class="block-type text-sm text-gray-500">Заголовок</div>
       </div>
-      
-      <FormatToolbar
-        :current-alignment="currentAlignment"
-        :current-color="currentColor"
-        @format-text="formatText"
-        @set-alignment="setAlignment"
-        @apply-color="applyColor"
-      />
-      
-      <div
-        ref="editor"
-        contenteditable="true"
-        class="editor-content text-2xl font-bold w-full p-2 border rounded transition-colors duration-200"
-        :class="{
+
+      <FormatToolbar :current-alignment="currentAlignment" :current-color="currentColor" @format-text="formatText"
+        @set-alignment="setAlignment" @apply-color="applyColor" />
+
+      <div ref="editor" contenteditable="true"
+        class="editor-content text-2xl font-bold w-full p-2 border rounded transition-colors duration-200" :class="{
           'border-blue-400': dragState.isDragging,
           'border-gray-300': !dragState.isDragging
-        }"
-        :style="{ textAlign: currentAlignment, color: currentColor }"
-        @input="handleInput"
-        @keyup="handleSelection"
-        @mouseup="handleSelection"
-        :innerHTML="localContent"
-        placeholder="Введите заголовок..."
-      ></div>
+        }" :style="{ textAlign: currentAlignment, color: currentColor }" @input="handleInput" @keyup="handleSelection"
+        @mouseup="handleSelection" :innerHTML="localContent" placeholder="Введите заголовок..."></div>
     </div>
   </div>
 </template>
@@ -57,16 +33,16 @@ import { HeadingIcon } from '@/components/icons'
 
 export default {
   name: 'HeadingBlock',
-  
+
   components: {
     DeleteBlockButton,
     BlockControls,
     FormatToolbar,
     HeadingIcon
   },
-  
+
   mixins: [dragdrop],
-  
+
   props: {
     content: {
       type: [String, Object],
@@ -92,7 +68,7 @@ export default {
       default: false
     }
   },
-  
+
   data() {
     return {
       currentAlignment: 'left',
@@ -108,14 +84,14 @@ export default {
   computed: {
     headingText() {
       if (!this.content) return ''
-      return typeof this.content === 'string' 
-        ? this.content 
+      return typeof this.content === 'string'
+        ? this.content
         : (this.content.text || '')
     },
-    
+
     headingLevel() {
       if (!this.content) return 1
-      return typeof this.content === 'object' 
+      return typeof this.content === 'object'
         ? (this.content.level || 1)
         : 1
     }
@@ -133,7 +109,7 @@ export default {
       this.$refs.editor.innerHTML = this.content;
     }
   },
-  
+
   methods: {
     handleMove(direction) {
       const fromIndex = this.index

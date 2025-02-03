@@ -1,11 +1,6 @@
 <template>
   <BaseIcon :size="size" :class-name="className">
-    <path 
-      stroke-linecap="round" 
-      stroke-linejoin="round" 
-      stroke-width="2" 
-      d="M9 5v4m0 6v4M15 5v4m0 6v4"
-    />
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5v4m0 6v4M15 5v4m0 6v4" />
   </BaseIcon>
 </template>
 
@@ -20,4 +15,4 @@ export default {
     className: { type: String, default: '' }
   }
 }
-</script> 
+</script>

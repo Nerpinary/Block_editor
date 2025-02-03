@@ -9,8 +9,13 @@ describe('DropZone.vue', () => {
 
   beforeEach(() => {
     wrapper = shallowMount(DropZone, {
-      propsData: defaultProps
+      propsData: defaultProps,
+      attachTo: document.body
     })
+  })
+
+  afterEach(() => {
+    wrapper.destroy()
   })
 
   it('renders correctly with default props', () => {
@@ -63,7 +68,15 @@ describe('DropZone.vue', () => {
   })
 
   it('handles drag leave correctly', async () => {
-    const event = { preventDefault: jest.fn() }
+    const relatedTarget = document.createElement('div')
+    document.body.appendChild(relatedTarget)
+
+    const event = { 
+      preventDefault: jest.fn(),
+      relatedTarget: relatedTarget,
+      currentTarget: wrapper.element
+    }
+    
     wrapper.vm.isDragOver = true
     
     await wrapper.vm.handleDragLeave(event)
@@ -74,6 +87,8 @@ describe('DropZone.vue', () => {
       event,
       zoneId: 'test-zone'
     }])
+
+    document.body.removeChild(relatedTarget)
   })
 
   it('handles drop correctly with valid data', async () => {

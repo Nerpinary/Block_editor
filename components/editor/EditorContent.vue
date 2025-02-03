@@ -1,33 +1,13 @@
 <template>
-  <div 
-    class="editor-content max-w-4xl mx-auto p-8"
-    @dragover="onDragOver"
-    @drop="onDrop"
-  >
-    <div 
-      v-for="(block, index) in blocks" 
-      :key="block.id" 
-      :data-index="index"
-      class="editor-block mb-4"
-      @dragenter.prevent
-      @dragleave="onDragLeave"
-    >
-      <component
-        :is="getComponentName(block.type)"
-        :content="block.content"
-        :index="index"
-        :parent-id="'main-editor'"
-        :is-last="index === blocks.length - 1"
-        @update:content="updateBlockContent(index, $event)"
-        @remove="$store.commit('REMOVE_BLOCK', index)"
-        @duplicate="duplicateBlock(index)"
-      />
+  <div class="editor-content max-w-4xl mx-auto p-8" @dragover="onDragOver" @drop="onDrop">
+    <div v-for="(block, index) in blocks" :key="block.id" :data-index="index" class="editor-block mb-4"
+      @dragenter.prevent @dragleave="onDragLeave">
+      <component :is="getComponentName(block.type)" :content="block.content" :index="index" :parent-id="'main-editor'"
+        :is-last="index === blocks.length - 1" @update:content="updateBlockContent(index, $event)"
+        @remove="$store.commit('REMOVE_BLOCK', index)" @duplicate="duplicateBlock(index)" />
     </div>
 
-    <div 
-      v-if="blocks.length === 0" 
-      class="text-center py-12 text-gray-500"
-    >
+    <div v-if="blocks.length === 0" class="text-center py-12 text-gray-500">
       <slot name="empty-state">
         Нажмите на блок слева, чтобы добавить его
       </slot>
@@ -69,7 +49,7 @@ export default {
     },
 
     updateBlockContent(index, content) {
-      console.log('Updating content:', index, content) // Отладка
+      console.log('Updating content:', index, content)
       this.$store.commit('UPDATE_BLOCK', {
         index,
         block: {
@@ -92,7 +72,7 @@ export default {
     },
 
     getDefaultContent(type) {
-      switch(type) {
+      switch (type) {
         case BLOCK_TYPES.TEXT:
           return ''
         case BLOCK_TYPES.HEADING:
@@ -148,4 +128,4 @@ export default {
 .dragging {
   opacity: 0.5;
 }
-</style> 
+</style>

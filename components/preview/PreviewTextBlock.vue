@@ -1,12 +1,9 @@
 <template>
   <div class="preview-text-block">
-    <div 
-      class="prose max-w-none"
-      :style="{
-        color: textContent.color || 'inherit',
-        textAlign: textContent.alignment || 'left'
-      }"
-    >
+    <div class="prose max-w-none" :style="{
+      color: textContent.color || 'inherit',
+      textAlign: textContent.alignment || 'left'
+    }">
       {{ textContent.text || content }}
     </div>
   </div>
@@ -15,7 +12,7 @@
 <script>
 export default {
   name: 'PreviewTextBlock',
-  
+
   props: {
     content: {
       type: [String, Object],
@@ -36,4 +33,4 @@ export default {
     }
   }
 }
-</script> 
+</script>

@@ -1,17 +1,11 @@
 <template>
-  <div
-    class="drop-zone"
-    :class="{
-      'drop-zone--active': isActive,
-      'drop-zone--drag-over': isDragOver,
-      'drop-zone--empty': !hasSlot,
-      [orientation]: true
-    }"
-    @dragover.prevent="handleDragOver"
-    @dragenter.prevent="handleDragEnter"
-    @dragleave.prevent="handleDragLeave"
-    @drop.prevent="handleDrop"
-  >
+  <div class="drop-zone" :class="{
+    'drop-zone--active': isActive,
+    'drop-zone--drag-over': isDragOver,
+    'drop-zone--empty': !hasSlot,
+    [orientation]: true
+  }" @dragover.prevent="handleDragOver" @dragenter.prevent="handleDragEnter" @dragleave.prevent="handleDragLeave"
+    @drop.prevent="handleDrop">
     <div class="drop-zone__content">
       <div v-if="hasSlot" class="drop-zone__slot">
         <slot></slot>
@@ -69,7 +63,7 @@ export default {
     isActive() {
       return this.active
     },
-    
+
     hasSlot() {
       return !!this.$slots.default
     }
@@ -89,14 +83,14 @@ export default {
 
     handleDragLeave(event) {
       if (!this.isActive) return
-      
+
       const dropZone = event.currentTarget
       const relatedTarget = event.relatedTarget
-      
+
       if (dropZone.contains(relatedTarget)) {
         return
       }
-      
+
       this.isDragOver = false
       this.$emit('dragleave', { event, zoneId: this.zoneId })
     },
@@ -104,14 +98,14 @@ export default {
     handleDrop(event) {
       if (!this.isActive) return
       this.isDragOver = false
-      
+
       try {
         const data = JSON.parse(event.dataTransfer.getData('application/json'))
         if (this.allowedTypes.length && !this.allowedTypes.includes(data.type)) {
           console.warn('This type is not allowed in this drop zone')
           return
         }
-        this.$emit('drop', { 
+        this.$emit('drop', {
           data,
           zoneId: this.zoneId,
           event
@@ -168,7 +162,7 @@ export default {
   border-style: dashed;
   transform: scale(1.02);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-              0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .drop-zone__placeholder {
@@ -208,9 +202,11 @@ export default {
   0% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.02);
   }
+
   100% {
     transform: scale(1);
   }
@@ -219,4 +215,4 @@ export default {
 .drop-zone--drag-over {
   animation: pulse 2s infinite;
 }
-</style> 
+</style>

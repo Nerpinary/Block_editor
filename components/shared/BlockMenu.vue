@@ -1,50 +1,32 @@
 <template>
   <div class="block-menu">
-    <button 
-      @click="isOpen = !isOpen"
+    <button @click="isOpen = !isOpen"
       class="menu-trigger absolute left-2 top-2 p-1.5 bg-white text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"
-      title="Меню блока"
-    >
+      title="Меню блока">
       <DotsVerticalIcon :size="4" />
     </button>
 
-    <div 
-      v-if="isOpen"
+    <div v-if="isOpen"
       class="menu-dropdown absolute left-12 top-0 py-1 bg-white rounded-lg shadow-lg border z-50 min-w-[160px]"
-      v-click-outside="closeMenu"
-    >
-      <button 
-        v-if="!isFirst"
-        class="menu-item"
-        @click="moveBlock('up')"
-      >
+      v-click-outside="closeMenu">
+      <button v-if="!isFirst" class="menu-item" @click="moveBlock('up')">
         <ChevronUpIcon :size="4" class="mr-2" />
         Переместить вверх
       </button>
 
-      <button 
-        v-if="!isLast"
-        class="menu-item"
-        @click="moveBlock('down')"
-      >
+      <button v-if="!isLast" class="menu-item" @click="moveBlock('down')">
         <ChevronDownIcon :size="4" class="mr-2" />
         Переместить вниз
       </button>
 
-      <button 
-        class="menu-item"
-        @click="duplicateBlock"
-      >
+      <button class="menu-item" @click="duplicateBlock">
         <DuplicateIcon :size="4" class="mr-2" />
         Дублировать
       </button>
 
       <div class="border-t my-1"></div>
 
-      <button 
-        class="menu-item text-red-600 hover:bg-red-50"
-        @click="removeBlock"
-      >
+      <button class="menu-item text-red-600 hover:bg-red-50" @click="removeBlock">
         <DeleteIcon :size="4" class="mr-2" />
         Удалить
       </button>
@@ -53,9 +35,9 @@
 </template>
 
 <script>
-import { 
-  DotsVerticalIcon, 
-  ChevronUpIcon, 
+import {
+  DotsVerticalIcon,
+  ChevronUpIcon,
   ChevronDownIcon,
   DuplicateIcon,
   DeleteIcon
@@ -119,7 +101,7 @@ export default {
   directives: {
     clickOutside: {
       mounted(el, binding) {
-        el.clickOutsideEvent = function(event) {
+        el.clickOutsideEvent = function (event) {
           if (!(el === event.target || el.contains(event.target))) {
             binding.value(event)
           }
@@ -151,4 +133,4 @@ export default {
 .menu-dropdown {
   z-index: 20;
 }
-</style> 
+</style>

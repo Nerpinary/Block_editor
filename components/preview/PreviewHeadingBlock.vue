@@ -1,21 +1,16 @@
 <template>
   <div class="preview-heading-block">
-    <component
-      :is="'h' + (headingContent.level || 1)"
-      :style="{
-        color: headingContent.color || 'inherit',
-        textAlign: headingContent.alignment || 'left'
-      }"
-      class="font-bold"
-      :class="{
+    <component :is="'h' + (headingContent.level || 1)" :style="{
+      color: headingContent.color || 'inherit',
+      textAlign: headingContent.alignment || 'left'
+    }" class="font-bold" :class="{
         'text-4xl': headingContent.level === 1,
         'text-3xl': headingContent.level === 2,
         'text-2xl': headingContent.level === 3,
         'text-xl': headingContent.level === 4,
         'text-lg': headingContent.level === 5,
         'text-base': headingContent.level === 6
-      }"
-    >
+      }">
       {{ headingContent.text || content }}
     </component>
   </div>
@@ -24,7 +19,7 @@
 <script>
 export default {
   name: 'PreviewHeadingBlock',
-  
+
   props: {
     content: {
       type: [String, Object],
@@ -63,4 +58,4 @@ export default {
     }
   }
 }
-</script> 
+</script>

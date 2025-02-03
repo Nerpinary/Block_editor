@@ -2,39 +2,20 @@
   <div class="columns-block border rounded p-4 relative group">
     <DeleteBlockButton @delete="$emit('remove')" />
 
-    <BlockControls 
-      :index="index"
-      :is-last="isLast"
-      @move="handleMove"
-      @duplicate="$emit('duplicate')"
-    />
-    
-    <div class="flex gap-4">
-      <div 
-        v-for="(column, columnIndex) in localColumns" 
-        :key="`column-${index}-${columnIndex}`" 
-        class="flex-1"
-      >
-        <div class="space-y-4">  
-          <component 
-            v-for="(block, blockIndex) in column"
-            :key="`block-${index}-${columnIndex}-${block.id || blockIndex}`"
-            :is="getBlockComponent(block.type)"
-            :content="block.content"
-            :index="blockIndex"
-            :parent-id="`column-${columnIndex}`"
-            :is-inside-column="true"
-            @update:content="updateBlockContent(columnIndex, blockIndex, $event)"
-            @remove="removeBlockFromColumn(columnIndex, blockIndex)"
-          />
+    <BlockControls :index="index" :is-last="isLast" @move="handleMove" @duplicate="$emit('duplicate')" />
 
-          <DropZone
-            :key="`dropzone-${index}-${columnIndex}`"
-            :zone-id="`column-${columnIndex}`"
-            :placeholder="'Перетащите сюда блок'"
-            class="min-h-[100px]"
-            @drop="handleDropIntoColumn($event, columnIndex)"
-          />
+    <div class="flex gap-4">
+      <div v-for="(column, columnIndex) in localColumns" :key="`column-${index}-${columnIndex}`" class="flex-1">
+        <div class="space-y-4">
+          <component v-for="(block, blockIndex) in column"
+            :key="`block-${index}-${columnIndex}-${block.id || blockIndex}`" :is="getBlockComponent(block.type)"
+            :content="block.content" :index="blockIndex" :parent-id="`column-${columnIndex}`" :is-inside-column="true"
+            @update:content="updateBlockContent(columnIndex, blockIndex, $event)"
+            @remove="removeBlockFromColumn(columnIndex, blockIndex)" />
+
+          <DropZone :key="`dropzone-${index}-${columnIndex}`" :zone-id="`column-${columnIndex}`"
+            :placeholder="'Перетащите сюда блок'" class="min-h-[100px]"
+            @drop="handleDropIntoColumn($event, columnIndex)" />
         </div>
       </div>
     </div>
@@ -137,13 +118,13 @@ export default {
         type: data.type,
         content: data.originalBlock?.content || data.content
       };
-      
+
       const newColumns = this.localColumns.map(column => [...column]);
-      
+
       newColumns[columnIndex] = [...newColumns[columnIndex], blockToAdd];
-      
+
       this.localColumns = newColumns;
-      
+
       this.updateStore();
 
       if (data.source === 'editor' && typeof data.index === 'number') {
@@ -189,28 +170,28 @@ export default {
 
     updateBlockContent(columnIndex, blockIndex, newContent) {
       const newColumns = this.localColumns.map(column => [...column]);
-      
+
       if (newColumns[columnIndex][blockIndex]) {
         newColumns[columnIndex][blockIndex] = {
           ...newColumns[columnIndex][blockIndex],
           content: newContent
         };
-        
+
         this.localColumns = newColumns;
-        
+
         this.updateStore();
       }
     },
 
     removeBlockFromColumn(columnIndex, blockIndex) {
       console.log('Removing block:', { columnIndex, blockIndex });
-      
+
       const newColumns = this.localColumns.map(column => [...column]);
-      
+
       newColumns[columnIndex] = newColumns[columnIndex].filter((_, index) => index !== blockIndex);
-      
+
       this.localColumns = newColumns;
-      
+
       this.updateStore();
     },
 

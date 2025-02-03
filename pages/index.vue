@@ -2,15 +2,10 @@
   <div class="min-h-screen flex">
     <BlockLibrary @add-block="addBlock" />
 
-    <!-- Основная область редактирования -->
     <div class="flex-1 bg-gray-50">
       <EditorHeader @preview="$router.push('/preview')" />
-      
-      <EditorContent 
-        :blocks="blocks"
-        @update-content="updateBlockContent"
-        @remove-block="removeBlock"
-      />
+
+      <EditorContent :blocks="blocks" @update-content="updateBlockContent" @remove-block="removeBlock" />
     </div>
   </div>
 </template>
@@ -63,14 +58,14 @@ export default {
 <style scoped>
 .block-wrapper {
   transition: all 0.3s ease;
-  margin-bottom: 1rem; /* 16px */
+  margin-bottom: 1rem;
+  /* 16px */
 }
 
 .block-wrapper:hover {
   transform: translateX(8px);
 }
 
-/* Анимации для TransitionGroup */
 .list-move {
   transition: transform 0.3s ease;
 }
@@ -86,7 +81,6 @@ export default {
   transform: translateX(30px);
 }
 
-/* Трансформации для блоков */
 .transform {
   transition: transform 0.3s ease;
 }
@@ -95,7 +89,6 @@ export default {
   transform: scale(0.98);
 }
 
-/* Стили для места вставки */
 .drop-indicator {
   height: 2px;
   background-color: #3b82f6;
@@ -103,23 +96,23 @@ export default {
   transition: opacity 0.2s ease;
 }
 
-/* Добавим немного стилей для сайдбара */
 .bg-gray-800 {
   background-color: #2d3748;
 }
+
 .sidebar__button {
   height: 100%;
 }
 
-/* Уточним отступы для индикатора вставки */
 [v-if="isDragging && dropIndex === index"] {
-  margin: 0.75rem 0; /* 12px сверху и снизу */
+  margin: 0.75rem 0;
+  /* 12px сверху и снизу */
 }
 
-/* Добавим стили для иконок */
 .w-4 {
   width: 1rem;
 }
+
 .h-4 {
   height: 1rem;
 }
@@ -145,7 +138,6 @@ export default {
   opacity: 0.5;
 }
 
-/* Добавляем иконку перетаскивания */
 .drag-wrapper::before {
   content: "⋮";
   position: absolute;
