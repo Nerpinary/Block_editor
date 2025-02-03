@@ -9,7 +9,6 @@
         <DragIcon :size="5" />
       </button>
 
-      <!-- Кнопка меню -->
       <div class="relative">
         <button 
           @click="isMenuOpen = !isMenuOpen"
@@ -19,7 +18,6 @@
           <DotsVerticalIcon :size="5" />
         </button>
 
-        <!-- Выпадающее меню -->
         <div 
           v-if="isMenuOpen"
           class="absolute left-full ml-2 top-0 py-1 bg-white rounded-lg shadow-lg border z-50 min-w-[160px]"
@@ -123,7 +121,6 @@ export default {
 </script>
 
 <style scoped>
-/* Убрали стили анимации, оставили только базовые стили */
 .control-button {
   @apply p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors;
   display: block;

@@ -41,7 +41,6 @@ export default {
     headingContent() {
       if (typeof this.content === 'string') {
         try {
-          // Пробуем распарсить JSON
           const parsed = JSON.parse(this.content)
           if (typeof parsed === 'object') {
             return {
@@ -52,7 +51,6 @@ export default {
             }
           }
         } catch (e) {
-          // Если не получилось распарсить, считаем что это просто текст
           return {
             text: this.content,
             level: 1,

@@ -32,12 +32,16 @@
         ref="editor"
         contenteditable="true"
         class="editor-content text-2xl font-bold w-full p-2 border rounded transition-colors duration-200"
-        :class="{ 'border-blue-400': dragState.isDragging }"
+        :class="{
+          'border-blue-400': dragState.isDragging,
+          'border-gray-300': !dragState.isDragging
+        }"
         :style="{ textAlign: currentAlignment, color: currentColor }"
         @input="handleInput"
-        @keyup="saveSelection"
-        @mouseup="saveSelection"
+        @keyup="handleSelection"
+        @mouseup="handleSelection"
         placeholder="Введите заголовок..."
+        v-model="localContent"
       ></div>
     </div>
   </div>
@@ -114,13 +118,14 @@ export default {
 
   mounted() {
     try {
-      const parsed = JSON.parse(this.content)
-      this.currentAlignment = parsed.alignment || 'left'
-      this.currentColor = parsed.color || '#1F2937'
-      this.localContent = parsed.text || ''
-      this.$refs.editor.innerHTML = this.localContent
+      const parsed = JSON.parse(this.content);
+      const { alignment = 'left', color = '#1F2937', text = '' } = parsed;
+      this.currentAlignment = alignment;
+      this.currentColor = color;
+      this.localContent = text;
+      this.$refs.editor.innerHTML = this.localContent;
     } catch {
-      this.$refs.editor.innerHTML = this.content
+      this.$refs.editor.innerHTML = this.content;
     }
   },
   
@@ -164,12 +169,16 @@ export default {
     },
 
     setAlignment(align) {
-      this.currentAlignment = align
-      this.$refs.editor.focus()
-      this.restoreSelection()
-      document.execCommand(`justify${align.charAt(0).toUpperCase() + align.slice(1)}`, false, null)
-      this.saveSelection()
-      this.updateContent()
+      this.currentAlignment = align;
+      this.applyTextCommand(`justify${align.charAt(0).toUpperCase() + align.slice(1)}`);
+    },
+
+    applyTextCommand(command) {
+      this.$refs.editor.focus();
+      this.restoreSelection();
+      document.execCommand(command, false, null);
+      this.saveSelection();
+      this.updateContent();
     },
 
     applyColor(color) {
@@ -207,11 +216,8 @@ export default {
       event.dataTransfer.setData('application/json', JSON.stringify(blockData))
     },
 
-    onInput(event) {
-      this.$emit('update:content', {
-        text: event.target.value,
-        level: 1
-      })
+    handleSelection() {
+      this.saveSelection();
     }
   }
 }
@@ -225,7 +231,6 @@ export default {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Добавляем стили для анимации BlockControls */
 .heading-block :deep(.block-controls) {
   opacity: 0;
   transform: translateX(10px);

@@ -1,105 +1,74 @@
 <template>
   <div class="w-64 border-r bg-white p-4">
-    <!-- Примитивы -->
     <div class="mb-6">
       <h3 class="text-sm font-medium text-gray-500 mb-3">Примитивы</h3>
       <div class="space-y-2">
-        <!-- Блок с колонками -->
-        <div
-          class="block-library-item"
-          draggable="true"
-          @dragstart="handleDragStart($event, 'Columns')"
-          @click="addBlock('Columns')"
-        >
-          <div class="block-content">
-            <component :is="getBlockConfig('Columns').icon" class="icon" />
-            <span class="name">Колонки</span>
-          </div>
-        </div>
+        <BlockLibraryItem v-for="blockType in primitiveBlockTypes" :key="blockType" :type="blockType"
+          :icon="getBlockConfig(blockType).icon" :name="getBlockConfig(blockType).name"
+          @dragstart="handleDragStart($event, blockType)" @click="addBlock(blockType)" />
       </div>
     </div>
 
-    <!-- Контент -->
     <div class="mb-6">
       <h3 class="text-sm font-medium text-gray-500 mb-3">Контент</h3>
       <div class="space-y-2">
-        <!-- Текстовый блок -->
-        <div
-          class="block-library-item"
-          draggable="true"
-          @dragstart="handleDragStart($event, 'Text')"
-          @click="addBlock('Text')"
-        >
-          <div class="block-content">
-            <component :is="getBlockConfig('Text').icon" class="icon" />
-            <span class="name">Текст</span>
-          </div>
-        </div>
-
-        <!-- Заголовок -->
-        <div
-          class="block-library-item"
-          draggable="true"
-          @dragstart="handleDragStart($event, 'Heading')"
-          @click="addBlock('Heading')"
-        >
-          <div class="block-content">
-            <component :is="getBlockConfig('Heading').icon" class="icon" />
-            <span class="name">Заголовок</span>
-          </div>
-        </div>
-
-        <!-- Изображение -->
-        <div
-          class="block-library-item"
-          draggable="true"
-          @dragstart="handleDragStart($event, 'Image')"
-          @click="addBlock('Image')"
-        >
-          <div class="block-content">
-            <component :is="getBlockConfig('Image').icon" class="icon" />
-            <span class="name">Изображение</span>
-          </div>
-        </div>
+        <BlockLibraryItem v-for="blockType in contentBlockTypes" :key="blockType" :type="blockType"
+          :icon="getBlockConfig(blockType).icon" :name="getBlockConfig(blockType).name"
+          @dragstart="handleDragStart($event, blockType)" @click="addBlock(blockType)" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { BLOCK_TYPES } from '@/constants/blocks'
+import BlockLibraryItem from '@/components/editor/BlockLibraryItem.vue';
+import { BLOCK_TYPES, getBlockConfig } from '@/constants/blocks'
 
 export default {
   name: 'BlockLibrary',
 
   data() {
     return {
-      BLOCK_TYPES
+      BLOCK_TYPES,
+      primitiveBlockTypes: [BLOCK_TYPES.TWO_COLUMNS], // Используем константу из BLOCK_TYPES
+      contentBlockTypes: [BLOCK_TYPES.TEXT, BLOCK_TYPES.HEADING, BLOCK_TYPES.IMAGE] // Используем константы из BLOCK_TYPES
     }
   },
 
   methods: {
     getBlockConfig(type) {
-      return this.$store.getters.getBlockConfig(type)
+      const configs = {
+        [BLOCK_TYPES.TEXT]: { icon: 'TextIcon', name: 'Текст' },
+        [BLOCK_TYPES.HEADING]: { icon: 'HeadingIcon', name: 'Заголовок' },
+        [BLOCK_TYPES.IMAGE]: { icon: 'ImageIcon', name: 'Изображение' },
+        [BLOCK_TYPES.TWO_COLUMNS]: { icon: 'ColumnsIcon', name: 'Колонки' },
+      };
+      return configs[type] || { icon: 'DefaultIcon', name: 'Неизвестный блок' };
     },
     addBlock(type) {
       console.log('Adding block of type:', type)
-      
+
       const block = {
         type,
-        content: type === 'Columns' ? { columns: [[], []] } : ''
+        content: type === BLOCK_TYPES.TWO_COLUMNS ? { columns: [[], []] } : ''
       }
-      
+
       this.$store.commit('ADD_BLOCK', block)
     },
     handleDragStart(event, type) {
-      const data = {
+      const data = this.createDragData(type)
+      event.dataTransfer.setData('application/json', JSON.stringify(data))
+    },
+    createDragData(type) {
+      return {
         type,
-        content: type === 'Columns' ? { columns: [[], []] } : '',
+        content: type === BLOCK_TYPES.TWO_COLUMNS ? { columns: [[], []] } : '',
         source: 'sidebar'
       }
-      event.dataTransfer.setData('application/json', JSON.stringify(data))
     }
+  },
+  components: {
+    BlockLibraryItem
   }
 }
 </script>
@@ -130,4 +99,4 @@ export default {
   font-size: 0.875rem;
   color: #374151;
 }
-</style> 
+</style>

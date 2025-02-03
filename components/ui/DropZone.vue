@@ -12,12 +12,10 @@
     @drop.prevent="handleDrop"
   >
     <div class="drop-zone__content">
-      <!-- Если есть контент - показываем его -->
       <div v-if="hasSlot" class="drop-zone__slot">
         <slot></slot>
       </div>
 
-      <!-- Если нет контента - показываем плейсхолдер -->
       <div v-else class="drop-zone__placeholder">
         <div class="drop-zone__icon">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,23 +35,19 @@ export default {
   name: 'DropZone',
 
   props: {
-    // Уникальный идентификатор зоны
     zoneId: {
       type: String,
       required: true
     },
-    // Текст плейсхолдера
     placeholder: {
       type: String,
       default: 'Перетащите элемент сюда'
     },
-    // Ориентация (vertical/horizontal)
     orientation: {
       type: String,
       default: 'vertical',
       validator: value => ['vertical', 'horizontal'].includes(value)
     },
-    // Активна ли зона
     active: {
       type: Boolean,
       default: true

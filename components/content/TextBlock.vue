@@ -35,8 +35,6 @@
         :class="{ 'border-blue-400': dragState.isDragging }"
         :style="{ textAlign: currentAlignment, color: currentColor }"
         @input="handleInput"
-        @keyup="saveSelection"
-        @mouseup="saveSelection"
         placeholder="Введите текст..."
       ></div>
     </div>
@@ -132,25 +130,23 @@ export default {
     },
 
     formatText(command) {
-      this.$refs.editor.focus();
-      this.restoreSelection();
-      document.execCommand(command, false, null);
-      this.saveSelection();
+      this.applyTextCommand(command);
     },
 
     setAlignment(align) {
       this.currentAlignment = align;
-      this.$refs.editor.focus();
-      this.restoreSelection();
-      document.execCommand(`justify${align.charAt(0).toUpperCase() + align.slice(1)}`, false, null);
-      this.saveSelection();
+      this.applyTextCommand(`justify${align.charAt(0).toUpperCase() + align.slice(1)}`);
     },
 
     applyColor(color) {
       this.currentColor = color;
+      this.applyTextCommand('foreColor', color);
+    },
+
+    applyTextCommand(command) {
       this.$refs.editor.focus();
       this.restoreSelection();
-      document.execCommand('foreColor', false, color);
+      document.execCommand(command, false, null);
       this.saveSelection();
     },
 
@@ -167,31 +163,18 @@ export default {
         }
       }
       event.dataTransfer.setData('application/json', JSON.stringify(blockData))
+    },
+
+    handleSelection() {
+      this.saveSelection();
     }
   },
 
   watch: {
-    content: {
-      handler(newContent) {
-        if (this.$refs.editor && this.$refs.editor.innerHTML !== newContent) {
-          const selection = window.getSelection();
-          const range = selection.getRangeAt(0);
-          const start = range.startOffset;
-          const end = range.endOffset;
-          
-          this.$refs.editor.innerHTML = newContent;
-          
-          try {
-            const newRange = document.createRange();
-            const container = this.$refs.editor.firstChild || this.$refs.editor;
-            newRange.setStart(container, Math.min(start, container.textContent.length));
-            newRange.setEnd(container, Math.min(end, container.textContent.length));
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-          } catch (e) {
-            console.log('Could not restore cursor position:', e);
-          }
-        }
+    content(newContent) {
+      if (this.$refs.editor && this.$refs.editor.innerHTML !== newContent) {
+        this.$refs.editor.innerHTML = newContent;
+        this.restoreSelection();
       }
     }
   },

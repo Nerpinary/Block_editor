@@ -1,8 +1,10 @@
 module.exports = {
   moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
     '^@/(.*)$': '<rootDir>/$1',
     '^~/(.*)$': '<rootDir>/$1',
-    '^vue$': 'vue/dist/vue.common.js'
+    '^vue$': 'vue/dist/vue.common.js',
+    '^h3$': '<rootDir>/node_modules/h3/dist/index.cjs'
   },
   moduleFileExtensions: [
     'js',
@@ -10,7 +12,8 @@ module.exports = {
     'json'
   ],
   transform: {
-    '^.+\\.js$': 'babel-jest',
+    '^.+\\.jsx?$': 'babel-jest',
+    '^.+\\.mjs$': 'babel-jest',
     '.*\\.(vue)$': 'vue-jest'
   },
   collectCoverage: true,
@@ -18,5 +21,9 @@ module.exports = {
     '<rootDir>/components/**/*.vue',
     '<rootDir>/pages/**/*.vue'
   ],
-  testEnvironment: 'jsdom'
+  testEnvironment: 'jsdom',
+  extensionsToTreatAsEsm: ['.jsx', '.ts'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!uncrypto/)',
+  ],
 }

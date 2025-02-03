@@ -23,6 +23,10 @@
       <div class="image-container relative">
         <div 
           class="min-h-[200px] flex items-center justify-center border-2 border-dashed rounded cursor-pointer"
+          :class="{
+            'border-gray-300': !imageContent.url,
+            'border-blue-400': imageContent.url
+          }"
           @click="triggerFileInput"
         >
           <input
@@ -99,7 +103,7 @@ export default {
     imageContent() {
       return typeof this.content === 'string' 
         ? { url: '', caption: '' }
-        : this.content
+        : { ...this.content };
     }
   },
 
@@ -122,23 +126,29 @@ export default {
     },
 
     handleFileChange(event) {
-      const file = event.target.files[0]
-      if (file) {
-        const reader = new FileReader()
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
         reader.onload = (e) => {
           this.updateContent({
             url: e.target.result,
             caption: this.imageContent.caption
-          })
-        }
-        reader.readAsDataURL(file)
+          });
+        };
+        reader.onerror = () => {
+          console.error('Error reading file:', file);
+          this.$emit('error', 'Ошибка при загрузке изображения');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        this.$emit('error', 'Пожалуйста, загрузите изображение');
       }
     },
 
     updateContent(newContent) {
       this.$emit('update:content', {
-        url: newContent.url || '',
-        caption: newContent.caption || ''
+        url: newContent.url || this.imageContent.url,
+        caption: newContent.caption || this.imageContent.caption
       })
     },
 

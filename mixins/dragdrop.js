@@ -13,11 +13,9 @@ export default {
       this.dragState.isDragging = true
       this.dragState.draggedBlock = blockData
       
-      // Сохраняем данные для передачи
       event.dataTransfer.effectAllowed = 'move'
       event.dataTransfer.setData('application/json', JSON.stringify(blockData))
       
-      // Добавляем класс для визуального эффекта
       event.target.classList.add('dragging')
     },
     
@@ -25,7 +23,6 @@ export default {
       this.dragState.isDragging = false
       this.dragState.draggedBlock = null
       
-      // Удаляем класс
       event.target.classList.remove('dragging')
     },
     

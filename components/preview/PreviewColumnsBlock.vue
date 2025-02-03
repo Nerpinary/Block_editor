@@ -1,7 +1,6 @@
 <template>
   <div class="columns-block mb-4">
     <div class="grid grid-cols-2 gap-4">
-      <!-- Левая колонка -->
       <div class="left-column">
         <PreviewBlock
           v-for="(block, index) in parsedContent.left"
@@ -10,7 +9,6 @@
         />
       </div>
 
-      <!-- Правая колонка -->
       <div class="right-column">
         <PreviewBlock
           v-for="(block, index) in parsedContent.right"

@@ -1,6 +1,5 @@
 <template>
   <div class="formatting-toolbar flex items-center gap-2 mb-2 p-2 bg-white rounded-lg border shadow-sm">
-    <!-- Стили текста -->
     <div class="flex gap-1" v-if="hasTextFormatting">
       <button
         v-for="format in textFormats"
@@ -33,7 +32,6 @@
 
     <div class="h-4 w-px bg-gray-200" v-if="hasTextFormatting && hasAlignment"></div>
 
-    <!-- Выравнивание -->
     <div class="flex gap-1" v-if="hasAlignment">
       <button
         v-for="align in alignments"
@@ -49,7 +47,6 @@
 
     <div class="h-4 w-px bg-gray-200" v-if="hasAlignment && hasColorPicker"></div>
 
-    <!-- Выбор цвета -->
     <div class="relative" v-if="hasColorPicker">
       <button
         @click.stop="showColorPicker = !showColorPicker"
@@ -206,18 +203,14 @@ export default {
   },
 
   mounted() {
-    // Обновляем состояния при монтировании
     this.updateActiveStates();
     
-    // Добавляем слушатели событий для обновления состояний
     document.addEventListener('selectionchange', this.updateActiveStates);
     
-    // Обновляем состояния при изменении контента
     const observer = new MutationObserver(() => {
       this.updateActiveStates();
     });
     
-    // Наблюдаем за изменениями в contenteditable элементе
     if (this.$parent.$refs.editor) {
       observer.observe(this.$parent.$refs.editor, {
         childList: true,
@@ -226,7 +219,6 @@ export default {
       });
     }
     
-    // Очищаем при уничтожении компонента
     this.$once('hook:destroyed', () => {
       document.removeEventListener('selectionchange', this.updateActiveStates);
       observer.disconnect();

@@ -3,12 +3,10 @@
     <pre>{{ JSON.stringify(content.columns, null, 2) }}</pre>
     <div class="flex gap-4">
       <template v-for="(column, columnIndex) in content.columns">
-        <!-- Колонка -->
         <div :key="`column-${columnIndex}`" class="flex-1 min-h-[200px]">
           <DropZone :zone-id="`column-${columnIndex}`" :placeholder="'Перетащите сюда текст, изображение или заголовок'"
             class="h-full" @drop="handleDropIntoColumn($event, columnIndex)">
             <div class="space-y-4">
-              <!-- Отладочная информация -->
               <pre class="text-xs">{{ JSON.stringify(column, null, 2) }}</pre>
 
               <component v-for="(block, blockIndex) in processedColumns[columnIndex]" 
@@ -58,7 +56,7 @@ export default {
       type: Object,
       required: true,
       default: () => ({
-        columns: [[], []] // Две пустые колонки по умолчанию
+        columns: [[], []]
       })
     },
     index: {
@@ -77,7 +75,6 @@ export default {
 
   created() {
     console.log('ColumnsBlock created with content:', this.content)
-    // Инициализируем структуру, если она не определена
     if (!this.content?.columns) {
       this.$emit('update:content', {
         columns: [[], []]
@@ -118,17 +115,17 @@ export default {
     },
 
     handleDropIntoColumn({ data }, columnIndex) {
+      if (!data) return;
+
       const blockToMove = {
         id: data.id || `${Date.now()}`,
         type: data.type,
         content: data.content || ''
       };
 
-      // Глубокое копирование массива columns
-      const newColumns = JSON.parse(JSON.stringify(this.content.columns));
-      newColumns[columnIndex].push(blockToMove);
+      const newColumns = [...this.content.columns];
+      newColumns[columnIndex] = [...newColumns[columnIndex], blockToMove];
 
-      // Обновление состояния через мутацию Vuex
       this.$store.commit('UPDATE_BLOCK', {
         index: this.index,
         block: {
@@ -145,7 +142,6 @@ export default {
     },
 
     handleDropBetweenColumns({ data }, position) {
-      // Создаем новую пустую колонку в указанной позиции
       const newColumns = [...this.content.columns]
       newColumns.splice(position, 0, [])
 
@@ -227,7 +223,7 @@ export default {
         index: this.index,
         parentId: this.parentId,
         source: 'editor',
-        originalContent: this.content // Сохраняем оригинальный контент
+        originalContent: this.content
       }
       event.dataTransfer.setData('application/json', JSON.stringify(data))
     }
@@ -253,7 +249,6 @@ export default {
   padding: 0 0.5rem;
 }
 
-/* Анимация при наведении */
 .columns-block :deep(.block-controls) {
   opacity: 0;
   transform: translateX(10px);
@@ -265,7 +260,6 @@ export default {
   transform: translateX(0);
 }
 
-/* Стили для дроп-зон */
 .columns-block :deep(.column-drop-zone) {
   transition: all 0.2s ease;
 }

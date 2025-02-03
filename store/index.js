@@ -1,5 +1,6 @@
 export const state = () => ({
   blocks: [],
+  nextId: 1,
   blockConfigs: {
     'Text': {
       name: 'Текст',
@@ -28,67 +29,60 @@ export const getters = {
 export const mutations = {
   ADD_BLOCK(state, block) {
     state.blocks.push({
-      id: Date.now(),
+      id: state.nextId++,
       ...block
     })
   },
   UPDATE_BLOCK(state, { index, block }) {
-    console.log('Before update:', state.blocks[index]);
+    if (index < 0 || index >= state.blocks.length) {
+      console.error('Invalid index for update:', index);
+      return;
+    }
     state.blocks[index] = {
       ...state.blocks[index],
       ...block
     };
-    console.log('After update:', state.blocks[index]);
   },
   REORDER_BLOCKS(state, { fromIndex, toIndex }) {
-    const blocks = [...state.blocks];
-    const [movedBlock] = blocks.splice(fromIndex, 1);
-    blocks.splice(toIndex, 0, movedBlock);
-    state.blocks = blocks;
+    const [movedBlock] = state.blocks.splice(fromIndex, 1);
+    state.blocks.splice(toIndex, 0, movedBlock);
   },
   REMOVE_BLOCK(state, index) {
-    state.blocks.splice(index, 1)
+    console.log('Removing block at index:', index);
+    state.blocks.splice(index, 1);
   },
   SET_BLOCKS(state, blocks) {
-    state.blocks = blocks;
+    if (Array.isArray(blocks)) {
+      state.blocks = blocks;
+    } else {
+      console.error('Invalid blocks format:', blocks);
+    }
   },
   MOVE_BLOCK(state, { fromIndex, toIndex }) {
-    const blocks = [...state.blocks];
-    const [movedBlock] = blocks.splice(fromIndex, 1);
-    blocks.splice(toIndex, 0, movedBlock);
-    state.blocks = blocks;
+    const [movedBlock] = state.blocks.splice(fromIndex, 1);
+    state.blocks.splice(toIndex, 0, movedBlock);
   },
   ADD_BLOCK_AT_INDEX(state, { block, index }) {
     state.blocks.splice(index, 0, block);
   },
   UPDATE_COLUMNS_BLOCK(state, { index, columnIndex, block }) {
-    console.log('Updating columns block:', {
-      blockAtIndex: state.blocks[index],
-      index,
-      columnIndex,
-      block
-    })
+    const columnsBlock = state.blocks[index];
 
-    const columnsBlock = state.blocks[index]
-    
-    if (!columnsBlock) {
-      console.error('Block not found at index:', index)
-      return
-    }
-
-    if (!columnsBlock.content) {
-      columnsBlock.content = {}
+    if (!columnsBlock || !columnsBlock.content) {
+      console.error('Invalid columns block:', index);
+      return;
     }
 
     if (!columnsBlock.content.columns) {
-      columnsBlock.content.columns = [[], []]
+      columnsBlock.content.columns = [[], []];
     }
 
-    if (!columnsBlock.content.columns[columnIndex]) {
-      columnsBlock.content.columns[columnIndex] = []
+    if (columnIndex < 0 || columnIndex >= columnsBlock.content.columns.length) {
+      console.error('Invalid column index:', columnIndex);
+      return;
     }
 
-    columnsBlock.content.columns[columnIndex].push(block)
+    columnsBlock.content.columns[columnIndex].push(block);
   }
 };
 

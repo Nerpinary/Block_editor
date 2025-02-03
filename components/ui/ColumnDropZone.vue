@@ -10,12 +10,10 @@
       class="drop-zone-content"
       :class="{ 'is-drag-over': isDragOver }"
     >
-      <!-- Если есть контент - показываем его -->
       <div v-if="$slots.default" class="content-wrapper">
         <slot></slot>
       </div>
       
-      <!-- Если контента нет - показываем плейсхолдер -->
       <div v-else class="empty-placeholder">
         <div class="placeholder-icon">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
