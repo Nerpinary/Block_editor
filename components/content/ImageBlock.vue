@@ -7,13 +7,14 @@
     @dragend="onDragEnd"
   >
     <BlockControls 
+      v-if="!isInsideColumn"
       :index="index"
       :is-last="isLast"
       @move="handleMove"
       @duplicate="$emit('duplicate')"
     />
 
-    <DeleteBlockButton @delete="removeBlock" />
+    <DeleteBlockButton @delete="$emit('remove')" />
 
     <div class="block-content">
       <div class="block-header flex items-center mb-2">
@@ -96,6 +97,22 @@ export default {
     parentId: {
       type: String,
       default: 'main-editor'
+    },
+    isInsideColumn: {
+      type: Boolean,
+      default: false
+    }
+  },
+
+  data() {
+    return {
+      dragState: {
+        isDragging: false
+      },
+      imageContent: {
+        url: '',
+        caption: ''
+      }
     }
   },
 
@@ -130,10 +147,16 @@ export default {
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
-          this.updateContent({
+          const newContent = {
             url: e.target.result,
             caption: this.imageContent.caption
-          });
+          };
+          
+          this.imageContent = { ...newContent };
+          
+          this.$emit('update:content', newContent);
+          
+          this.$refs.fileInput.value = '';
         };
         reader.onerror = () => {
           console.error('Error reading file:', file);
@@ -146,10 +169,16 @@ export default {
     },
 
     updateContent(newContent) {
-      this.$emit('update:content', {
-        url: newContent.url || this.imageContent.url,
-        caption: newContent.caption || this.imageContent.caption
-      })
+      const updatedContent = newContent.url 
+        ? newContent 
+        : {
+            url: this.imageContent.url,
+            caption: newContent.caption || this.imageContent.caption
+          };
+      
+      this.imageContent = { ...updatedContent };
+      
+      this.$emit('update:content', updatedContent);
     },
 
     onDragStart(event) {
@@ -178,15 +207,24 @@ export default {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.image-block :deep(.block-controls) {
+.image-block:not(.is-inside-column) :deep(.block-controls) {
   opacity: 0;
   transform: translateX(10px);
   transition: all 0.2s ease-in-out;
 }
 
-.image-block:hover :deep(.block-controls) {
+.image-block:not(.is-inside-column):hover :deep(.block-controls) {
   opacity: 1;
   transform: translateX(0);
+}
+
+.image-block :deep(.delete-button) {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.image-block:hover :deep(.delete-button) {
+  opacity: 1;
 }
 
 .upload-placeholder {

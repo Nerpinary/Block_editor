@@ -97,7 +97,6 @@ describe('EditorContent.vue', () => {
     })
   })
 
-  // Тесты для drag and drop функциональности
   describe('drag and drop', () => {
     it('handles dragover event', async () => {
       const event = {

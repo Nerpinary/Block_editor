@@ -1,25 +1,42 @@
 <template>
-  <div class="columns-block border rounded p-4">
-    <pre>{{ JSON.stringify(content.columns, null, 2) }}</pre>
-    <div class="flex gap-4">
-      <template v-for="(column, columnIndex) in content.columns">
-        <div :key="`column-${columnIndex}`" class="flex-1 min-h-[200px]">
-          <DropZone :zone-id="`column-${columnIndex}`" :placeholder="'Перетащите сюда текст, изображение или заголовок'"
-            class="h-full" @drop="handleDropIntoColumn($event, columnIndex)">
-            <div class="space-y-4">
-              <pre class="text-xs">{{ JSON.stringify(column, null, 2) }}</pre>
+  <div class="columns-block border rounded p-4 relative group">
+    <DeleteBlockButton @delete="$emit('remove')" />
 
-              <component v-for="(block, blockIndex) in processedColumns[columnIndex]" 
-              :key="block.id || blockIndex"
-                :is="getBlockComponent(block.type)" 
-                :content="block.content" :index="blockIndex"
-                :parent-id="`column-${columnIndex}`"
-                @update:content="updateBlockContent(columnIndex, blockIndex, $event)"
-                @remove="removeBlock(columnIndex, blockIndex)" />
-            </div>
-          </DropZone>
+    <BlockControls 
+      :index="index"
+      :is-last="isLast"
+      @move="handleMove"
+      @duplicate="$emit('duplicate')"
+    />
+    
+    <div class="flex gap-4">
+      <div 
+        v-for="(column, columnIndex) in localColumns" 
+        :key="`column-${index}-${columnIndex}`" 
+        class="flex-1"
+      >
+        <div class="space-y-4">  
+          <component 
+            v-for="(block, blockIndex) in column"
+            :key="`block-${index}-${columnIndex}-${block.id || blockIndex}`"
+            :is="getBlockComponent(block.type)"
+            :content="block.content"
+            :index="blockIndex"
+            :parent-id="`column-${columnIndex}`"
+            :is-inside-column="true"
+            @update:content="updateBlockContent(columnIndex, blockIndex, $event)"
+            @remove="removeBlockFromColumn(columnIndex, blockIndex)"
+          />
+
+          <DropZone
+            :key="`dropzone-${index}-${columnIndex}`"
+            :zone-id="`column-${columnIndex}`"
+            :placeholder="'Перетащите сюда блок'"
+            class="min-h-[100px]"
+            @drop="handleDropIntoColumn($event, columnIndex)"
+          />
         </div>
-      </template>
+      </div>
     </div>
   </div>
 </template>
@@ -47,7 +64,7 @@ export default {
 
   computed: {
     processedColumns() {
-      return JSON.parse(JSON.stringify(this.content.columns));
+      return this.content?.columns || [[], []];
     }
   },
 
@@ -73,13 +90,14 @@ export default {
     }
   },
 
-  created() {
-    console.log('ColumnsBlock created with content:', this.content)
-    if (!this.content?.columns) {
-      this.$emit('update:content', {
-        columns: [[], []]
-      })
+  data() {
+    return {
+      localColumns: [[], []]
     }
+  },
+
+  created() {
+    this.localColumns = JSON.parse(JSON.stringify(this.content.columns || [[], []]));
   },
 
   mounted() {
@@ -98,14 +116,11 @@ export default {
   },
 
   watch: {
-    content: {
-      handler(newContent) {
-        console.log('Content changed:', {
-          newContent,
-          columns: newContent.columns
-        })
-      },
-      deep: true
+    'content.columns': {
+      immediate: true,
+      handler(newColumns) {
+        this.localColumns = JSON.parse(JSON.stringify(newColumns || [[], []]));
+      }
     }
   },
 
@@ -117,24 +132,21 @@ export default {
     handleDropIntoColumn({ data }, columnIndex) {
       if (!data) return;
 
-      const blockToMove = {
-        id: data.id || `${Date.now()}`,
+      const blockToAdd = {
+        id: Date.now(),
         type: data.type,
-        content: data.content || ''
+        content: data.originalBlock?.content || data.content
       };
+      
+      const newColumns = this.localColumns.map(column => [...column]);
+      
+      newColumns[columnIndex] = [...newColumns[columnIndex], blockToAdd];
+      
+      this.localColumns = newColumns;
+      
+      this.updateStore();
 
-      const newColumns = [...this.content.columns];
-      newColumns[columnIndex] = [...newColumns[columnIndex], blockToMove];
-
-      this.$store.commit('UPDATE_BLOCK', {
-        index: this.index,
-        block: {
-          ...this.content,
-          columns: newColumns
-        }
-      });
-
-      if (typeof data.index === 'number') {
+      if (data.source === 'editor' && typeof data.index === 'number') {
         this.$nextTick(() => {
           this.$store.commit('REMOVE_BLOCK', data.index);
         });
@@ -176,39 +188,34 @@ export default {
     },
 
     updateBlockContent(columnIndex, blockIndex, newContent) {
-      const newColumns = this.content.columns.map((column, colIdx) =>
-        colIdx === columnIndex
-          ? column.map((block, blkIdx) =>
-            blkIdx === blockIndex
-              ? { ...block, content: newContent }
-              : block
-          )
-          : column
-      )
+      const newColumns = this.localColumns.map(column => [...column]);
+      
+      if (newColumns[columnIndex][blockIndex]) {
+        newColumns[columnIndex][blockIndex] = {
+          ...newColumns[columnIndex][blockIndex],
+          content: newContent
+        };
+        
+        this.localColumns = newColumns;
+        
+        this.updateStore();
+      }
+    },
 
-      this.$store.commit('UPDATE_BLOCK', {
-        index: this.index,
-        block: {
-          ...this.content,
-          columns: newColumns
-        }
-      })
+    removeBlockFromColumn(columnIndex, blockIndex) {
+      console.log('Removing block:', { columnIndex, blockIndex });
+      
+      const newColumns = this.localColumns.map(column => [...column]);
+      
+      newColumns[columnIndex] = newColumns[columnIndex].filter((_, index) => index !== blockIndex);
+      
+      this.localColumns = newColumns;
+      
+      this.updateStore();
     },
 
     removeBlock(columnIndex, blockIndex) {
-      const newColumns = this.content.columns.map((column, colIdx) =>
-        colIdx === columnIndex
-          ? column.filter((_, blkIdx) => blkIdx !== blockIndex)
-          : column
-      )
-
-      this.$store.commit('UPDATE_BLOCK', {
-        index: this.index,
-        block: {
-          ...this.content,
-          columns: newColumns
-        }
-      })
+      this.removeBlockFromColumn(columnIndex, blockIndex);
     },
 
     handleMove(direction) {
@@ -226,6 +233,28 @@ export default {
         originalContent: this.content
       }
       event.dataTransfer.setData('application/json', JSON.stringify(data))
+    },
+
+    logState() {
+      console.log('Current component state:', {
+        content: this.content,
+        columns: this.content.columns,
+        index: this.index
+      });
+    },
+
+    updateStore() {
+      const updatedBlock = {
+        type: 'Columns',
+        content: {
+          columns: JSON.parse(JSON.stringify(this.localColumns))
+        }
+      };
+
+      this.$store.commit('UPDATE_BLOCK', {
+        index: this.index,
+        block: updatedBlock
+      });
     }
   }
 }
@@ -239,55 +268,59 @@ export default {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.columns-wrapper {
+.columns-block :deep(.block-controls),
+.columns-block :deep(.delete-button) {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.columns-block:hover :deep(.block-controls),
+.columns-block:hover :deep(.delete-button) {
+  opacity: 1;
+}
+
+.column {
+  flex: 1;
+  min-height: 200px;
+  padding: 1rem;
   background: #f8fafc;
   border-radius: 0.5rem;
-  padding: 1.25rem;
 }
 
-.columns-header {
-  padding: 0 0.5rem;
+.block-wrapper {
+  margin-bottom: 1rem;
 }
 
-.columns-block :deep(.block-controls) {
-  opacity: 0;
-  transform: translateX(10px);
-  transition: all 0.2s ease-in-out;
-}
-
-.columns-block:hover :deep(.block-controls) {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.columns-block :deep(.column-drop-zone) {
+:deep(.drop-zone) {
+  margin: 0.5rem 0;
   transition: all 0.2s ease;
 }
 
-.columns-block :deep(.drop-zone-content) {
-  border: 2px dashed #e2e8f0;
-  min-height: 120px;
-}
-
-.columns-block :deep(.drop-zone-content:hover) {
-  border-color: #94a3b8;
-  background: #f1f5f9;
-}
-
-.columns-block :deep(.is-drag-over) {
-  border-color: #60a5fa;
-  background: #eff6ff;
-}
-
-.empty-column-message {
+:deep(.drop-zone--empty) {
   min-height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
+}
+
+:deep(.drop-zone__content) {
+  border: 2px dashed #e2e8f0;
   border-radius: 0.5rem;
-  background: #f9fafb;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+:deep(.drop-zone--drag-over .drop-zone__content) {
+  border-color: #4F46E5;
+  background: rgba(79, 70, 229, 0.1);
+  transform: scale(1.02);
+}
+
+.block-enter-active,
+.block-leave-active {
+  transition: all 0.3s ease;
+}
+
+.block-enter-from,
+.block-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
 }
 </style>

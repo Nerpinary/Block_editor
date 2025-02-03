@@ -1,8 +1,7 @@
 <template>
-  <button 
-    class="delete-button opacity-0 group-hover:opacity-100 absolute -right-2 -top-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600 transition-all"
-    @click.stop="$emit('delete')"
-    title="Удалить блок"
+  <button
+    class="delete-button absolute top-2 right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+    @click="$emit('delete')"
   >
     <DeleteIcon :size="4" />
   </button>

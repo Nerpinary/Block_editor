@@ -7,13 +7,14 @@
     @dragend="onDragEnd"
   >
     <BlockControls 
+      v-if="!isInsideColumn"
       :index="index"
       :is-last="isLast"
       @move="handleMove"
       @duplicate="$emit('duplicate')"
     />
 
-    <DeleteBlockButton @delete="removeBlock" />
+    <DeleteBlockButton @delete="$emit('remove')" />
 
     <div class="block-content">
       <div class="block-header flex items-center mb-2">
@@ -74,6 +75,10 @@ export default {
     parentId: {
       type: String,
       default: 'main-editor'
+    },
+    isInsideColumn: {
+      type: Boolean,
+      default: false
     }
   },
 
@@ -206,13 +211,13 @@ export default {
 }
 
 /* Добавляем стили для анимации BlockControls */
-.text-block :deep(.block-controls) {
+.text-block:not(.is-inside-column) :deep(.block-controls) {
   opacity: 0;
   transform: translateX(10px);
   transition: all 0.2s ease-in-out;
 }
 
-.text-block:hover :deep(.block-controls) {
+.text-block:not(.is-inside-column):hover :deep(.block-controls) {
   opacity: 1;
   transform: translateX(0);
 }
@@ -229,5 +234,15 @@ export default {
 .editor-content:focus {
   @apply border-blue-400;
   outline: none;
+}
+
+/* Отдельные стили для кнопки удаления */
+.text-block :deep(.delete-button) {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.text-block:hover :deep(.delete-button) {
+  opacity: 1;
 }
 </style>

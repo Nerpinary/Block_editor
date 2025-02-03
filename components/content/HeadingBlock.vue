@@ -7,13 +7,14 @@
     @dragend="onDragEnd"
   >
     <BlockControls 
+      v-if="!isInsideColumn"
       :index="index"
       :is-last="isLast"
-      @move="$emit('move', $event)"
+      @move="handleMove"
       @duplicate="$emit('duplicate')"
     />
-
-    <DeleteBlockButton @delete="$emit('remove-original-block')" />
+    
+    <DeleteBlockButton @delete="$emit('remove')" />
 
     <div class="block-content">
       <div class="block-header flex items-center mb-2">
@@ -40,8 +41,8 @@
         @input="handleInput"
         @keyup="handleSelection"
         @mouseup="handleSelection"
+        :innerHTML="localContent"
         placeholder="Введите заголовок..."
-        v-model="localContent"
       ></div>
     </div>
   </div>
@@ -85,6 +86,10 @@ export default {
     parentId: {
       type: String,
       default: 'main-editor'
+    },
+    isInsideColumn: {
+      type: Boolean,
+      default: false
     }
   },
   
@@ -205,12 +210,10 @@ export default {
         index: this.index,
         parentId: this.parentId,
         source: 'editor',
-        content: this.content,
+        content: typeof this.content === 'object' ? this.content.text : this.content,
         originalBlock: {
           type: 'Heading',
-          content: typeof this.content === 'object' 
-            ? { ...this.content }
-            : { text: this.content, level: 1 }
+          content: this.content
         }
       }
       event.dataTransfer.setData('application/json', JSON.stringify(blockData))
@@ -231,13 +234,13 @@ export default {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.heading-block :deep(.block-controls) {
+.heading-block:not(.is-inside-column) :deep(.block-controls) {
   opacity: 0;
   transform: translateX(10px);
   transition: all 0.2s ease-in-out;
 }
 
-.heading-block:hover :deep(.block-controls) {
+.heading-block:not(.is-inside-column):hover :deep(.block-controls) {
   opacity: 1;
   transform: translateX(0);
 }
@@ -254,5 +257,14 @@ export default {
 .editor-content:focus {
   @apply border-blue-400;
   outline: none;
+}
+
+.heading-block :deep(.delete-button) {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.heading-block:hover :deep(.delete-button) {
+  opacity: 1;
 }
 </style>

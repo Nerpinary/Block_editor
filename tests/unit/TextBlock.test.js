@@ -39,7 +39,7 @@ describe('TextBlock.vue', () => {
     await wrapper.vm.applyColor('#FF0000');
     expect(wrapper.vm.currentColor).toBe('#FF0000');
     const editor = wrapper.find('[contenteditable="true"]');
-    expect(editor.element.style.color).toBe('rgb(255, 0, 0)'); // Проверка на rgb
+    expect(editor.element.style.color).toBe('rgb(255, 0, 0)');
   });
 
   it('emits remove-original-block when delete button is clicked', async () => {
