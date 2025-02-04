@@ -23,7 +23,8 @@ export default {
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
     '@/plugins/blocks.js',
-    '@/plugins/components'
+    '@/plugins/components',
+    '@/plugins/firebase.js'
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
@@ -37,8 +38,24 @@ export default {
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
-    '@nuxtjs/tailwindcss'
+    '@nuxtjs/tailwindcss',
+    '@nuxtjs/firebase'
   ],
+
+  firebase: {
+    config: {
+      apiKey: "AIzaSyBtyhVvhsZabNKtYCNWUYWVsTyHs1m_gOw",
+      authDomain: "blockeditor-ab41b.firebaseapp.com",
+      projectId: "blockeditor-ab41b",
+      storageBucket: "blockeditor-ab41b.firebasestorage.app",
+      messagingSenderId: "664484068128",
+      appId: "1:664484068128:web:60cade9c3e81c6dbcd7545",
+      measurementId: "G-VYG2QPG9W5"
+    },
+    services: {
+      firestore: true
+    }
+  },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {

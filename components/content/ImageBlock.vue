@@ -29,8 +29,11 @@
         </div>
       </div>
 
-      <input v-if="imageContent.url" v-model="imageContent.caption" class="mt-2 w-full border-none bg-transparent"
-        placeholder="Подпись к изображению..." @input="updateContent">
+      <input v-if="imageContent.url" 
+        :value="imageContent.caption"
+        class="mt-2 w-full border-none bg-transparent"
+        placeholder="Подпись к изображению..." 
+        @input="updateCaption($event.target.value)">
     </div>
   </div>
 </template>
@@ -80,19 +83,20 @@ export default {
     return {
       dragState: {
         isDragging: false
-      },
-      imageContent: {
-        url: '',
-        caption: ''
       }
     }
   },
 
   computed: {
     imageContent() {
-      return typeof this.content === 'string'
-        ? { url: '', caption: '' }
-        : { ...this.content };
+      if (typeof this.content === 'string') {
+        try {
+          return JSON.parse(this.content)
+        } catch {
+          return { url: '', caption: '' }
+        }
+      }
+      return this.content || { url: '', caption: '' }
     }
   },
 
@@ -121,13 +125,11 @@ export default {
         reader.onload = (e) => {
           const newContent = {
             url: e.target.result,
-            caption: this.imageContent.caption
+            caption: this.imageContent.caption || ''
           };
-
-          this.imageContent = { ...newContent };
-
+          
           this.$emit('update:content', newContent);
-
+          
           this.$refs.fileInput.value = '';
         };
         reader.onerror = () => {
@@ -140,16 +142,11 @@ export default {
       }
     },
 
-    updateContent(newContent) {
-      const updatedContent = newContent.url
-        ? newContent
-        : {
-          url: this.imageContent.url,
-          caption: newContent.caption || this.imageContent.caption
-        };
-
-      this.imageContent = { ...updatedContent };
-
+    updateCaption(caption) {
+      const updatedContent = {
+        url: this.imageContent.url,
+        caption: caption
+      };
       this.$emit('update:content', updatedContent);
     },
 
@@ -159,10 +156,10 @@ export default {
         index: this.index,
         parentId: this.parentId,
         source: 'editor',
-        content: this.content,
+        content: this.imageContent,
         originalBlock: {
           type: 'Image',
-          content: this.content
+          content: this.imageContent
         }
       }
       event.dataTransfer.setData('application/json', JSON.stringify(blockData))

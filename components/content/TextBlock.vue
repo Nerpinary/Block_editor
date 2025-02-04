@@ -75,7 +75,13 @@ export default {
   },
 
   mounted() {
-    this.$refs.editor.innerHTML = this.content;
+    if (typeof this.content === 'string') {
+      this.$refs.editor.innerHTML = this.content;
+    } else if (typeof this.content === 'object') {
+      this.$refs.editor.innerHTML = this.content.text || '';
+      this.currentAlignment = this.content.alignment || 'left';
+      this.currentColor = this.content.color || '#1F2937';
+    }
   },
 
   methods: {
@@ -108,10 +114,25 @@ export default {
     },
 
     handleInput(event) {
-      this.saveSelection();
-      this.$emit('update:content', event.target.innerHTML);
+      const selection = window.getSelection();
+      const range = selection.getRangeAt(0);
+      const start = range.startOffset;
+      const end = range.endOffset;
+
+      const updatedContent = {
+        text: event.target.innerHTML,
+        alignment: this.currentAlignment,
+        color: this.currentColor
+      };
+      
+      this.$emit('update:content', updatedContent);
+
       this.$nextTick(() => {
-        this.restoreSelection();
+        const newRange = document.createRange();
+        newRange.setStart(selection.anchorNode, start);
+        newRange.setEnd(selection.anchorNode, end);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
       });
     },
 
@@ -157,11 +178,20 @@ export default {
   },
 
   watch: {
-    content(newContent) {
-      if (this.$refs.editor && this.$refs.editor.innerHTML !== newContent) {
-        this.$refs.editor.innerHTML = newContent;
-        this.restoreSelection();
-      }
+    content: {
+      handler(newContent) {
+        if (this.$refs.editor && !this.$refs.editor.matches(':focus')) {
+          // Обновляем DOM только если элемент не в фокусе
+          if (typeof newContent === 'string') {
+            this.$refs.editor.innerHTML = newContent;
+          } else if (typeof newContent === 'object') {
+            this.$refs.editor.innerHTML = newContent.text || '';
+            this.currentAlignment = newContent.alignment || 'left';
+            this.currentColor = newContent.color || '#1F2937';
+          }
+        }
+      },
+      deep: true
     }
   },
 

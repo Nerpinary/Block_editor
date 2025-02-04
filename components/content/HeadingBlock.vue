@@ -98,15 +98,26 @@ export default {
   },
 
   mounted() {
-    try {
-      const parsed = JSON.parse(this.content);
-      const { alignment = 'left', color = '#1F2937', text = '' } = parsed;
-      this.currentAlignment = alignment;
-      this.currentColor = color;
-      this.localContent = text;
+    let content = this.content;
+    
+    if (typeof content === 'string') {
+      try {
+        content = JSON.parse(content);
+      } catch (e) {
+        content = {
+          text: content,
+          alignment: 'left',
+          color: '#1F2937'
+        };
+      }
+    }
+
+    this.currentAlignment = content.alignment || 'left';
+    this.currentColor = content.color || '#1F2937';
+    this.localContent = content.text || '';
+    
+    if (this.$refs.editor) {
       this.$refs.editor.innerHTML = this.localContent;
-    } catch {
-      this.$refs.editor.innerHTML = this.content;
     }
   },
 

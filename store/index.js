@@ -1,3 +1,5 @@
+import { firebaseService } from '@/services/firebase'
+
 export const state = () => ({
   blocks: [],
   nextId: 1,
@@ -18,7 +20,8 @@ export const state = () => ({
       name: 'Колонки',
       icon: 'ColumnsIcon'
     }
-  }
+  },
+  savedPages: []
 });
 
 export const getters = {
@@ -38,10 +41,11 @@ export const mutations = {
       console.error('Invalid index for update:', index);
       return;
     }
-    state.blocks[index] = {
-      ...state.blocks[index],
-      ...block
-    };
+    state.blocks = [
+      ...state.blocks.slice(0, index),
+      { ...block },
+      ...state.blocks.slice(index + 1)
+    ]
   },
   REORDER_BLOCKS(state, { fromIndex, toIndex }) {
     const [movedBlock] = state.blocks.splice(fromIndex, 1);
@@ -83,6 +87,25 @@ export const mutations = {
     }
 
     columnsBlock.content.columns[columnIndex].push(block);
+  },
+  SET_SAVED_PAGES(state, pages) {
+    state.savedPages = pages
+  },
+  ADD_SAVED_PAGE(state, page) {
+    state.savedPages.push(page)
+  },
+  REMOVE_SAVED_PAGE(state, pageId) {
+    state.savedPages = state.savedPages.filter(page => page.id !== pageId)
+  },
+  UPDATE_SAVED_PAGE(state, updatedPage) {
+    const index = state.savedPages.findIndex(p => p.id === updatedPage.id)
+    if (index !== -1) {
+      state.savedPages = [
+        ...state.savedPages.slice(0, index),
+        updatedPage,
+        ...state.savedPages.slice(index + 1)
+      ]
+    }
   }
 };
 
@@ -104,5 +127,113 @@ export const actions = {
   },
   updateColumnsBlock({ commit }, payload) {
     commit('UPDATE_COLUMNS_BLOCK', payload);
+  },
+  async loadSavedPages({ commit }) {
+    try {
+      const pages = await firebaseService.getPages()
+      commit('SET_SAVED_PAGES', pages)
+    } catch (error) {
+      console.error('Error loading pages:', error)
+    }
+  },
+  async loadPage({ commit }, pageId) {
+    try {
+      console.log('Loading page with ID:', pageId)
+      const page = await firebaseService.getPage(pageId)
+      if (page) {
+        const processedBlocks = page.blocks.map(block => {
+          try {
+            return {
+              ...block,
+              content: typeof block.content === 'string' 
+                ? JSON.parse(block.content) 
+                : block.content
+            }
+          } catch {
+            return block
+          }
+        })
+        
+        commit('SET_BLOCKS', processedBlocks)
+        return page
+      }
+    } catch (error) {
+      console.error('Error loading page:', error)
+      throw error
+    }
+  },
+  async savePage({ state, commit }, { title, slug }) {
+    try {
+      const processedBlocks = state.blocks.map(block => ({
+        ...block,
+        content: typeof block.content === 'object' && block.content !== null
+          ? JSON.stringify(block.content)
+          : block.content
+      }))
+      
+      const newPage = {
+        title,
+        slug,
+        blocks: processedBlocks,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      
+      const pageId = await firebaseService.savePage(newPage)
+      
+      const savedPage = {
+        ...newPage,
+        id: pageId
+      }
+      
+      commit('ADD_SAVED_PAGE', savedPage)
+      return savedPage
+    } catch (error) {
+      console.error('Error saving page:', error)
+      throw error
+    }
+  },
+  async updatePage({ state, commit }, { pageId, title, slug }) {
+    try {
+      console.log('Updating page with ID:', pageId)
+      const processedBlocks = state.blocks.map(block => ({
+        ...block,
+        content: typeof block.content === 'object' && block.content !== null
+          ? JSON.stringify(block.content)
+          : block.content
+      }))
+      
+      const updatedPage = {
+        title,
+        slug,
+        blocks: processedBlocks,
+        updatedAt: new Date().toISOString()
+      }
+      
+      await firebaseService.updatePage(pageId, updatedPage)
+      
+      commit('UPDATE_SAVED_PAGE', {
+        ...updatedPage,
+        id: pageId
+      })
+      
+      return { ...updatedPage, id: pageId }
+    } catch (error) {
+      console.error('Error updating page:', error)
+      throw error
+    }
+  },
+  async deletePage({ commit }, pageId) {
+    try {
+      await firebaseService.deletePage(pageId)
+      commit('REMOVE_SAVED_PAGE', pageId)
+      
+      const pages = JSON.parse(localStorage.getItem('pages') || '[]')
+      const filteredPages = pages.filter(page => page.id !== pageId)
+      localStorage.setItem('pages', JSON.stringify(filteredPages))
+    } catch (error) {
+      console.error('Error deleting page:', error)
+      throw error
+    }
   }
 };

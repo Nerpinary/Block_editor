@@ -44,16 +44,19 @@ export default {
       if (this.$route.params.slug) {
         this.$router.push('/saved-pages')
       } else {
-        this.$router.push('/?from=preview')
+        this.$router.push('/')
       }
     }
   },
 
-  beforeRouteLeave(to, from, next) {
-    if (to.path === '/') {
-      localStorage.setItem('temp_blocks', JSON.stringify(this.blocks))
+  async created() {
+    if (this.$route.params.slug) {
+      const pages = JSON.parse(localStorage.getItem('pages') || '[]')
+      const page = pages.find(p => p.slug === this.$route.params.slug)
+      if (page) {
+        await this.$store.dispatch('loadPage', page.id)
+      }
     }
-    next()
   }
 }
-</script>
+</script> 

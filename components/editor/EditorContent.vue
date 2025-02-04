@@ -50,17 +50,26 @@ export default {
 
     updateBlockContent(index, content) {
       console.log('Updating content:', index, content)
+      const updatedBlock = {
+        ...this.blocks[index],
+        content: typeof content === 'object' ? { ...content } : content
+      }
+      
       this.$store.commit('UPDATE_BLOCK', {
         index,
-        block: {
-          ...this.blocks[index],
-          content
-        }
+        block: updatedBlock
+      })
+
+      this.$nextTick(() => {
+        this.$forceUpdate()
       })
     },
 
     duplicateBlock(index) {
-      const block = this.blocks[index]
+      const block = { ...this.blocks[index] }
+      if (typeof block.content === 'object') {
+        block.content = { ...block.content }
+      }
       this.$store.commit('ADD_BLOCK', {
         ...block,
         id: Date.now()

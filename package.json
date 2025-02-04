@@ -10,8 +10,10 @@
     "test": "jest"
   },
   "dependencies": {
+    "@nuxtjs/firebase": "^8.2.2",
     "@nuxtjs/tailwindcss": "^6.8.0",
     "core-js": "^3.25.3",
+    "firebase": "^9.6.2",
     "formidable": "^3.5.1",
     "h3": "^1.14.0",
     "nuxt": "^2.15.8",

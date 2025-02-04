@@ -3,10 +3,26 @@
     <BlockLibrary @add-block="addBlock" />
 
     <div class="flex-1 bg-gray-50">
-      <EditorHeader @preview="$router.push('/preview')" />
+      <EditorHeader 
+        :current-page-id="currentPageId"
+        :page-title="pageTitle"
+        :page-slug="pageSlug"
+        @preview="$router.push('/preview')"
+        @saved="onPageSaved"
+      />
 
-      <EditorContent :blocks="blocks" @update-content="updateBlockContent" @remove-block="removeBlock" />
+      <EditorContent 
+        :blocks="blocks" 
+        @update-content="updateBlockContent" 
+        @remove-block="removeBlock" 
+      />
     </div>
+
+    <Notification 
+      :show="showNotification"
+      :message="notificationMessage"
+      type="success"
+    />
   </div>
 </template>
 
@@ -14,6 +30,7 @@
 import BlockLibrary from '@/components/editor/BlockLibrary.vue'
 import EditorHeader from '@/components/editor/EditorHeader.vue'
 import EditorContent from '@/components/editor/EditorContent.vue'
+import Notification from '@/components/shared/Notification.vue'
 
 export default {
   name: 'EditorPage',
@@ -21,12 +38,39 @@ export default {
   components: {
     BlockLibrary,
     EditorHeader,
-    EditorContent
+    EditorContent,
+    Notification
+  },
+
+  data() {
+    return {
+      showNotification: false,
+      notificationMessage: '',
+      currentPageId: null,
+      pageTitle: '',
+      pageSlug: ''
+    }
   },
 
   computed: {
     blocks() {
       return this.$store.state.blocks
+    }
+  },
+
+  async mounted() {
+    const fromPreview = this.$route.query.from === 'preview'
+    const editPageId = this.$route.query.edit
+    
+    if (editPageId) {
+      this.currentPageId = editPageId
+      const page = await this.$store.dispatch('loadPage', this.currentPageId)
+      if (page) {
+        this.pageTitle = page.title
+        this.pageSlug = page.slug
+      }
+    } else if (!fromPreview) {
+      this.$store.commit('SET_BLOCKS', [])
     }
   },
 
@@ -50,6 +94,32 @@ export default {
 
     removeBlock({ index }) {
       this.$store.commit('REMOVE_BLOCK', index)
+    },
+
+    async onPageSaved({ title, slug }) {
+      try {
+        if (this.currentPageId) {
+          const updatedPage = await this.$store.dispatch('updatePage', {
+            pageId: this.currentPageId,
+            title,
+            slug
+          })
+          this.currentPageId = updatedPage.id
+          this.showNotification = true
+          this.notificationMessage = 'Изменения сохранены'
+        } else {
+          const newPage = await this.$store.dispatch('savePage', { title, slug })
+          this.currentPageId = newPage.id
+          this.showNotification = true
+          this.notificationMessage = 'Страница создана'
+        }
+
+        setTimeout(() => {
+          this.showNotification = false
+        }, 3000)
+      } catch (error) {
+        console.error('Error saving page:', error)
+      }
     }
   }
 }
@@ -59,7 +129,6 @@ export default {
 .block-wrapper {
   transition: all 0.3s ease;
   margin-bottom: 1rem;
-  /* 16px */
 }
 
 .block-wrapper:hover {
@@ -106,7 +175,6 @@ export default {
 
 [v-if="isDragging && dropIndex === index"] {
   margin: 0.75rem 0;
-  /* 12px сверху и снизу */
 }
 
 .w-4 {
