@@ -22,6 +22,8 @@ import TextBlock from '@/components/content/TextBlock.vue'
 import HeadingBlock from '@/components/content/HeadingBlock.vue'
 import ImageBlock from '@/components/content/ImageBlock.vue'
 import ColumnsBlock from '@/components/layout/ColumnsBlock.vue'
+import SpecificationsBlock from '@/components/content/SpecificationsBlock.vue'
+import ProsConsBlock from '@/components/content/ProsConsBlock.vue'
 import BlockMenu from '@/components/shared/BlockMenu.vue'
 
 export default {
@@ -32,6 +34,8 @@ export default {
     HeadingBlock,
     ImageBlock,
     ColumnsBlock,
+    SpecificationsBlock,
+    ProsConsBlock,
     BlockMenu
   },
 
@@ -97,6 +101,18 @@ export default {
         case BLOCK_TYPES.TWO_COLUMNS:
           return {
             columns: [[], []]
+          }
+        case BLOCK_TYPES.SPECIFICATIONS:
+          return {
+            rows: [
+              { key: '', value: '' },
+              { key: '', value: '' }
+            ]
+          }
+        case BLOCK_TYPES.PROS_CONS:
+          return {
+            pros: '',
+            cons: ''
           }
         default:
           return ''

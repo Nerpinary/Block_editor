@@ -1,8 +1,8 @@
 <template>
   <div class="block-library-item" draggable="true" @dragstart="$emit('dragstart')" @click="$emit('click', type)">
     <div class="block-content">
-      <component :is="getBlockConfig(type).icon" class="icon" />
-      <span class="name">{{ getBlockConfig(type).name }}</span>
+      <component :is="icon" class="icon" />
+      <span class="name">{{ name }}</span>
     </div>
   </div>
 </template>
@@ -10,15 +10,19 @@
 <script>
 export default {
   name: 'BlockLibraryItem',
+  
   props: {
     type: {
       type: String,
       required: true
-    }
-  },
-  methods: {
-    getBlockConfig(type) {
-      return this.$store.getters.getBlockConfig(type);
+    },
+    icon: {
+      type: [String, Object],
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
     }
   }
 }

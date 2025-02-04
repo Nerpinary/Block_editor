@@ -26,8 +26,26 @@
 </template>
 
 <script>
+import {
+  PreviewTextBlock,
+  PreviewHeadingBlock,
+  PreviewImageBlock,
+  PreviewColumnsBlock,
+  PreviewSpecificationsBlock,
+  PreviewProsConsBlock
+} from '@/components/preview'
+
 export default {
   name: 'PreviewPage',
+
+  components: {
+    PreviewTextBlock,
+    PreviewHeadingBlock,
+    PreviewImageBlock,
+    PreviewColumnsBlock,
+    PreviewSpecificationsBlock,
+    PreviewProsConsBlock
+  },
 
   computed: {
     blocks() {

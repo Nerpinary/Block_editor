@@ -7,19 +7,32 @@
     <DeleteBlockButton @delete="$emit('remove')" />
 
     <div class="block-content">
-      <div class="block-header flex items-center mb-2">
+      <div class="block-header flex items-center justify-between mb-2">
         <div class="block-type text-sm text-gray-500">Заголовок</div>
+        <HeadingLevelSelector 
+          :value="currentLevel" 
+          @input="updateHeadingLevel" />
       </div>
 
       <FormatToolbar :current-alignment="currentAlignment" :current-color="currentColor" @format-text="formatText"
         @set-alignment="setAlignment" @apply-color="applyColor" />
 
       <div ref="editor" contenteditable="true"
-        class="editor-content text-2xl font-bold w-full p-2 border rounded transition-colors duration-200" :class="{
-          'border-blue-400': dragState.isDragging,
-          'border-gray-300': !dragState.isDragging
-        }" :style="{ textAlign: currentAlignment, color: currentColor }" @input="handleInput" @keyup="handleSelection"
-        @mouseup="handleSelection" :innerHTML="localContent" placeholder="Введите заголовок..."></div>
+        class="editor-content w-full p-2 border rounded transition-colors duration-200"
+        :class="[
+          headingClasses,
+          {
+            'border-blue-400': dragState.isDragging,
+            'border-gray-300': !dragState.isDragging
+          }
+        ]"
+        :style="{ textAlign: currentAlignment, color: currentColor }"
+        @input="handleInput"
+        @keyup="handleSelection"
+        @mouseup="handleSelection"
+        :innerHTML="localContent"
+        placeholder="Введите заголовок...">
+      </div>
     </div>
   </div>
 </template>
@@ -29,6 +42,7 @@ import dragdrop from '@/mixins/dragdrop'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import BlockControls from '@/components/shared/BlockControls.vue'
 import FormatToolbar from '@/components/shared/FormatToolbar.vue'
+import HeadingLevelSelector from '@/components/shared/HeadingLevelSelector.vue'
 import { HeadingIcon } from '@/components/icons'
 
 export default {
@@ -38,6 +52,7 @@ export default {
     DeleteBlockButton,
     BlockControls,
     FormatToolbar,
+    HeadingLevelSelector,
     HeadingIcon
   },
 
@@ -77,7 +92,8 @@ export default {
       localContent: '',
       dragState: {
         isDragging: false
-      }
+      },
+      currentLevel: 1
     }
   },
 
@@ -94,6 +110,18 @@ export default {
       return typeof this.content === 'object'
         ? (this.content.level || 1)
         : 1
+    },
+
+    headingClasses() {
+      const sizes = {
+        1: 'text-4xl',
+        2: 'text-3xl',
+        3: 'text-2xl',
+        4: 'text-xl',
+        5: 'text-lg',
+        6: 'text-base'
+      }
+      return `font-bold ${sizes[this.currentLevel]}`
     }
   },
 
@@ -107,7 +135,8 @@ export default {
         content = {
           text: content,
           alignment: 'left',
-          color: '#1F2937'
+          color: '#1F2937',
+          level: 1
         };
       }
     }
@@ -115,6 +144,7 @@ export default {
     this.currentAlignment = content.alignment || 'left';
     this.currentColor = content.color || '#1F2937';
     this.localContent = content.text || '';
+    this.currentLevel = content.level || 1;
     
     if (this.$refs.editor) {
       this.$refs.editor.innerHTML = this.localContent;
@@ -186,7 +216,8 @@ export default {
       const content = JSON.stringify({
         text: this.localContent,
         alignment: this.currentAlignment,
-        color: this.currentColor
+        color: this.currentColor,
+        level: this.currentLevel
       })
       this.$emit('update:content', content)
     },
@@ -208,6 +239,11 @@ export default {
 
     handleSelection() {
       this.saveSelection();
+    },
+
+    updateHeadingLevel(level) {
+      this.currentLevel = level
+      this.updateContent()
     }
   }
 }
