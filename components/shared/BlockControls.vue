@@ -1,6 +1,6 @@
 <template>
-  <div class="block-controls-wrapper absolute -left-12 top-0 h-full flex items-center">
-    <div class="block-controls bg-white rounded-lg shadow-sm border p-1">
+  <div class="block-controls-wrapper">
+    <div class="block-controls">
       <button class="control-button" title="Перетащить блок">
         <DragIcon :size="5" />
       </button>
@@ -11,7 +11,7 @@
         </button>
 
         <div v-if="isMenuOpen"
-          class="absolute left-full ml-2 top-0 py-1 bg-white rounded-lg shadow-lg border z-50 min-w-[160px]"
+          class="block-menu absolute left-full ml-2 top-0 py-1 bg-white rounded-lg shadow-xl border min-w-[160px]"
           v-click-outside="closeMenu">
           <button v-if="index > 0" class="menu-item" @click="moveBlock('up')">
             <ChevronUpIcon :size="4" class="mr-2" />
@@ -95,11 +95,39 @@ export default {
         document.removeEventListener('click', el.clickOutsideEvent)
       }
     }
+  },
+
+  mounted() {
+    if (this.$refs.menu) {
+      const button = this.$refs.menu.previousElementSibling;
+      const rect = button.getBoundingClientRect();
+      this.$refs.menu.style.left = `${rect.right + 8}px`;
+      this.$refs.menu.style.top = `${rect.top}px`;
+    }
   }
 }
 </script>
 
 <style scoped>
+.block-controls-wrapper {
+  position: absolute;
+  left: -3rem;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  z-index: 1000;
+}
+
+.block-controls {
+  position: relative;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0.25rem;
+}
+
 .control-button {
   @apply p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors;
   display: block;
@@ -108,6 +136,50 @@ export default {
 }
 
 .menu-item {
-  @apply w-full px-3 py-2 text-sm flex items-center hover:bg-gray-50 transition-colors;
+  @apply w-full px-3 py-2 text-sm flex items-center hover:bg-gray-50 transition-colors text-gray-700;
+}
+
+.block-menu {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  min-width: 160px;
+  z-index: 1001;
+  animation: menuAppear 0.15s ease-out;
+  transform-origin: left center;
+}
+
+@keyframes menuAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+.menu-item {
+  position: relative;
+  background: white;
+}
+
+.menu-item:hover {
+  background: #f3f4f6;
+}
+
+.menu-item:active {
+  background: #e5e7eb;
+}
+
+.menu-item + .menu-item {
+  border-top: 1px solid #f3f4f6;
 }
 </style>

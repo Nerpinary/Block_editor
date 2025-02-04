@@ -30,8 +30,8 @@ export default {
   data() {
     return {
       BLOCK_TYPES,
-      primitiveBlockTypes: [BLOCK_TYPES.TWO_COLUMNS], // Используем константу из BLOCK_TYPES
-      contentBlockTypes: [BLOCK_TYPES.TEXT, BLOCK_TYPES.HEADING, BLOCK_TYPES.IMAGE] // Используем константы из BLOCK_TYPES
+      primitiveBlockTypes: [BLOCK_TYPES.TWO_COLUMNS],
+      contentBlockTypes: [BLOCK_TYPES.TEXT, BLOCK_TYPES.HEADING, BLOCK_TYPES.IMAGE]
     }
   },
 

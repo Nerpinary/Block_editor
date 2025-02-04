@@ -106,9 +106,18 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
+.editor-content {
+  isolation: isolate;
+}
+
 .editor-block {
   position: relative;
+  z-index: 1;
+}
+
+.editor-block:hover {
+  z-index: 2;
 }
 
 .editor-block:hover .menu-trigger {

@@ -214,6 +214,18 @@ export default {
 </script>
 
 <style scoped>
+.heading-block, .text-block, .image-block {
+  position: relative;
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.block-controls-wrapper) {
+  z-index: 1000 !important;
+}
+
 .heading-block {
   background: white;
   border-radius: 0.5rem;
