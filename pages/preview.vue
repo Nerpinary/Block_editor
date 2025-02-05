@@ -32,7 +32,9 @@ import {
   PreviewImageBlock,
   PreviewColumnsBlock,
   PreviewSpecificationsBlock,
-  PreviewProsConsBlock
+  PreviewProsConsBlock,
+  PreviewListBlock,
+  PreviewTableBlock
 } from '@/components/preview'
 
 export default {
@@ -44,7 +46,9 @@ export default {
     PreviewImageBlock,
     PreviewColumnsBlock,
     PreviewSpecificationsBlock,
-    PreviewProsConsBlock
+    PreviewProsConsBlock,
+    PreviewListBlock,
+    PreviewTableBlock
   },
 
   computed: {

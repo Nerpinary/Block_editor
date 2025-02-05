@@ -2,11 +2,21 @@
   <div class="columns-block mb-4">
     <div class="grid grid-cols-2 gap-4">
       <div class="left-column">
-        <PreviewBlock v-for="(block, index) in parsedContent.left" :key="`left-${index}`" :block="block" />
+        <component 
+          v-for="(block, index) in parsedContent.left" 
+          :key="`left-${index}`"
+          :is="getPreviewComponent(block.type)"
+          :content="block.content"
+        />
       </div>
 
       <div class="right-column">
-        <PreviewBlock v-for="(block, index) in parsedContent.right" :key="`right-${index}`" :block="block" />
+        <component 
+          v-for="(block, index) in parsedContent.right" 
+          :key="`right-${index}`"
+          :is="getPreviewComponent(block.type)"
+          :content="block.content"
+        />
       </div>
     </div>
   </div>
@@ -23,6 +33,12 @@ export default {
     }
   },
 
+  methods: {
+    getPreviewComponent(type) {
+      return `Preview${type}Block`
+    }
+  },
+
   computed: {
     parsedContent() {
       if (typeof this.content === 'string') {
@@ -32,6 +48,15 @@ export default {
           return { left: [], right: [] }
         }
       }
+      
+      // Преобразуем структуру columns в left/right для совместимости
+      if (this.content.columns) {
+        return {
+          left: this.content.columns[0] || [],
+          right: this.content.columns[1] || []
+        }
+      }
+      
       return this.content
     }
   }

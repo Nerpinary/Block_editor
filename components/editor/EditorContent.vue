@@ -24,6 +24,8 @@ import ImageBlock from '@/components/content/ImageBlock.vue'
 import ColumnsBlock from '@/components/layout/ColumnsBlock.vue'
 import SpecificationsBlock from '@/components/content/SpecificationsBlock.vue'
 import ProsConsBlock from '@/components/content/ProsConsBlock.vue'
+import ListBlock from '@/components/content/ListBlock.vue'
+import TableBlock from '@/components/content/TableBlock.vue'
 import BlockMenu from '@/components/shared/BlockMenu.vue'
 
 export default {
@@ -36,6 +38,8 @@ export default {
     ColumnsBlock,
     SpecificationsBlock,
     ProsConsBlock,
+    ListBlock,
+    TableBlock,
     BlockMenu
   },
 
@@ -113,6 +117,20 @@ export default {
           return {
             pros: '',
             cons: ''
+          }
+        case BLOCK_TYPES.LIST:
+          return {
+            items: [
+              { text: '' },
+              { text: '' }
+            ]
+          }
+        case BLOCK_TYPES.TABLE:
+          return {
+            data: [
+              ['', ''],
+              ['', '']
+            ]
           }
         default:
           return ''

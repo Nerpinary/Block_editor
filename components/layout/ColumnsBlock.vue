@@ -112,25 +112,38 @@ export default {
 
     handleDropIntoColumn({ data }, columnIndex) {
       if (!data) return;
+      console.log('Drop data:', data);
 
-      const blockToAdd = {
-        id: Date.now(),
-        type: data.type,
-        content: data.originalBlock?.content || data.content
-      };
+      if (data.parentId && data.parentId.startsWith('column-')) {
+        const [sourceColumnIndex, sourceBlockIndex] = this.parseColumnSource(data.parentId);
+        
+        const blockToMove = { ...this.localColumns[sourceColumnIndex][sourceBlockIndex] };
+        
+        const newColumns = this.localColumns.map(column => [...column]);
+        newColumns[sourceColumnIndex] = newColumns[sourceColumnIndex].filter((_, index) => index !== sourceBlockIndex);
+        
+        newColumns[columnIndex] = [...newColumns[columnIndex], blockToMove];
+        
+        this.localColumns = newColumns;
+        this.updateStore();
+      } else {
+        const blockToAdd = {
+          id: data.id || Date.now(),
+          type: data.type,
+          content: data.originalBlock?.content || data.content
+        };
 
-      const newColumns = this.localColumns.map(column => [...column]);
+        const newColumns = this.localColumns.map(column => [...column]);
+        newColumns[columnIndex] = [...newColumns[columnIndex], blockToAdd];
+        
+        this.localColumns = newColumns;
+        this.updateStore();
 
-      newColumns[columnIndex] = [...newColumns[columnIndex], blockToAdd];
-
-      this.localColumns = newColumns;
-
-      this.updateStore();
-
-      if (data.source === 'editor' && typeof data.index === 'number') {
-        this.$nextTick(() => {
-          this.$store.commit('REMOVE_BLOCK', data.index);
-        });
+        if (data.source === 'editor' && typeof data.index === 'number') {
+          this.$nextTick(() => {
+            this.$store.commit('REMOVE_BLOCK', data.index);
+          });
+        }
       }
     },
 

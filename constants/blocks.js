@@ -4,6 +4,7 @@ import ImageIcon from '@/components/icons/ImageIcon.vue'
 import ColumnsIcon from '@/components/icons/ColumnsIcon.vue'
 import TableIcon from '@/components/icons/TableIcon.vue'
 import ThumbUpIcon from '@/components/icons/ThumbUpIcon.vue'
+import ListIcon from '@/components/icons/ListIcon.vue'
 
 export const BLOCK_CATEGORIES = {
   BASIC: 'basic',
@@ -16,7 +17,9 @@ export const BLOCK_TYPES = {
   IMAGE: 'Image',
   TWO_COLUMNS: 'Columns',
   SPECIFICATIONS: 'Specifications',
-  PROS_CONS: 'ProsCons'
+  PROS_CONS: 'ProsCons',
+  LIST: 'List',
+  TABLE: 'Table'
 }
 
 const BLOCK_CONFIG = {
@@ -67,6 +70,28 @@ const BLOCK_CONFIG = {
     defaultContent: {
       pros: '',
       cons: ''
+    }
+  },
+  [BLOCK_TYPES.LIST]: {
+    name: 'Список',
+    icon: ListIcon,
+    category: BLOCK_CATEGORIES.CUSTOM,
+    defaultContent: {
+      items: [
+        { text: '' },
+        { text: '' }
+      ]
+    }
+  },
+  [BLOCK_TYPES.TABLE]: {
+    name: 'Таблица',
+    icon: TableIcon,
+    category: BLOCK_CATEGORIES.CUSTOM,
+    defaultContent: {
+      data: [
+        ['', ''],
+        ['', '']
+      ]
     }
   }
 }

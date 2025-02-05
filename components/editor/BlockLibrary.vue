@@ -40,7 +40,7 @@ export default {
     return {
       BLOCK_TYPES,
       primitiveBlockTypes: [BLOCK_TYPES.TWO_COLUMNS],
-      contentBlockTypes: [BLOCK_TYPES.TEXT, BLOCK_TYPES.HEADING, BLOCK_TYPES.IMAGE],
+      contentBlockTypes: [BLOCK_TYPES.HEADING, BLOCK_TYPES.TEXT, BLOCK_TYPES.IMAGE, BLOCK_TYPES.LIST, BLOCK_TYPES.TABLE],
       customBlockTypes: [BLOCK_TYPES.SPECIFICATIONS, BLOCK_TYPES.PROS_CONS]
     }
   },

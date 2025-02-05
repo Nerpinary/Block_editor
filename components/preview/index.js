@@ -5,6 +5,8 @@ import PreviewImageBlock from './PreviewImageBlock.vue'
 import PreviewTextBlock from './PreviewTextBlock.vue'
 import PreviewSpecificationsBlock from './SpecificationsPreview.vue'
 import PreviewProsConsBlock from './ProsConsPreview.vue'
+import PreviewListBlock from './ListPreview.vue'
+import PreviewTableBlock from './TablePreview.vue'
 
 export {
   PreviewBlock,
@@ -13,7 +15,9 @@ export {
   PreviewImageBlock,
   PreviewTextBlock,
   PreviewSpecificationsBlock,
-  PreviewProsConsBlock
+  PreviewProsConsBlock,
+  PreviewListBlock,
+  PreviewTableBlock
 }
 
 export default {
@@ -23,5 +27,7 @@ export default {
   PreviewImageBlock,
   PreviewTextBlock,
   PreviewSpecificationsBlock,
-  PreviewProsConsBlock
+  PreviewProsConsBlock,
+  PreviewListBlock,
+  PreviewTableBlock
 } 
