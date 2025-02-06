@@ -13,7 +13,6 @@ const uploadFile = async (event) => {
   const uploadDir = join(process.cwd(), 'public/uploads')
 
   return new Promise((resolve, reject) => {
-    // В Nuxt 3 нужно получить raw request
     const req = event.node.req
 
     form.parse(req, async (err, fields, files) => {
@@ -21,7 +20,7 @@ const uploadFile = async (event) => {
         return reject(err)
       }
 
-      const file = files.image?.[0] // formidable v3+ возвращает массив
+      const file = files.image?.[0]
 
       if (!file) {
         return reject(new Error('No file uploaded'))

@@ -27,14 +27,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, toRaw, watch } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { useRoute, useRouter } from 'vue-router'
 import BlockLibrary from '@/components/editor/BlockLibrary.vue'
 import EditorHeader from '@/components/editor/EditorHeader.vue'
 import EditorContent from '@/components/editor/EditorContent.vue'
 import Notification from '@/components/shared/Notification.vue'
-import type { Block, Page, PageData } from '@/types'
+import type { Block, BlockType } from '@/types/blocks'
+import type { Page } from '@/types/page'
+import type { PageData } from '@/types/page'
 
 const router = useRouter()
 const route = useRoute()
@@ -49,7 +51,12 @@ const pageSlug = ref('')
 
 const blocks = computed(() => store.blocks)
 
-const addBlock = (block: { type: string; content: any }) => {
+interface AddBlockParams {
+  type: BlockType
+  content: any
+}
+
+const addBlock = (block: AddBlockParams) => {
   console.log('Adding block:', block)
   const newBlock: Block = {
     id: Date.now(),
@@ -60,10 +67,19 @@ const addBlock = (block: { type: string; content: any }) => {
   store.addBlock(newBlock)
 }
 
-const updateBlockContent = ({ index, content }: { index: number; content: string }) => {
-  const block = { ...blocks.value[index] }
-  block.content = content
-  store.updateBlock({ index, block })
+const updateBlockContent = ({ index, content }: { index: number; content: string | object }) => {
+  const currentBlock = blocks.value[index]
+  
+  console.log('Current block:', currentBlock)
+  console.log('Incoming content:', content)
+  
+  const updatedBlock = {
+    ...currentBlock,
+    content
+  }
+  
+  console.log('Updated block before store:', updatedBlock)
+  store.updateBlock({ index, block: updatedBlock as Block })
 }
 
 const removeBlock = ({ index }: { index: number }) => {
@@ -92,29 +108,40 @@ const onPageSaved = async (pageData: PageData) => {
 }
 
 const handlePreview = () => {
-  localStorage.setItem('temp_blocks', JSON.stringify(store.blocks))
+  const rawBlocks = toRaw(store.blocks).map(block => ({
+    id: block.id,
+    type: block.type,
+    content: toRaw(block.content)
+  }))
+  
+  console.log('Raw blocks for preview:', rawBlocks)
+  localStorage.setItem('temp_blocks', JSON.stringify(rawBlocks))
   router.push('/preview')
 }
 
-onMounted(async () => {
-  const fromPreview = route.query.from === 'preview'
-  const editPageId = route.query.edit as string | undefined
-  
-  if (editPageId) {
-    currentPageId.value = editPageId
-    const page = await store.loadPage(currentPageId.value) as Page
-    if (page) {
-      pageTitle.value = page.title
-      pageSlug.value = page.slug
-    }
-  } else if (fromPreview) {
+onMounted(() => {
+  if (route.query.from === 'preview') {
     const tempBlocks = localStorage.getItem('temp_blocks')
+    console.log('Loading blocks from preview:', tempBlocks)
     if (tempBlocks) {
-      store.setBlocks(JSON.parse(tempBlocks))
-      localStorage.removeItem('temp_blocks')
+      try {
+        const blocks = JSON.parse(tempBlocks)
+        store.setBlocks(blocks)
+      } catch (error) {
+        console.error('Error parsing blocks:', error)
+      }
     }
-  } else {
-    store.setBlocks([])
+  }
+})
+
+onBeforeRouteLeave((to) => {
+  if (to.path === '/preview') {
+    const rawBlocks = toRaw(store.blocks).map(block => ({
+      id: block.id,
+      type: block.type,
+      content: toRaw(block.content)
+    }))
+    localStorage.setItem('temp_blocks', JSON.stringify(rawBlocks))
   }
 })
 </script>

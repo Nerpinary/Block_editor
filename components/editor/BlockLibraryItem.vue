@@ -2,8 +2,8 @@
   <div 
     class="block-library-item" 
     draggable="true" 
-    @dragstart="emit('dragstart', $event)" 
-    @click="emit('click', type)"
+    @dragstart="handleDragStart" 
+    @click="handleClick"
   >
     <div class="block-content">
       <component :is="icon" class="icon" />
@@ -22,12 +22,20 @@ interface Props {
   name: string
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   dragstart: [event: DragEvent]
   click: [type: BlockType]
 }>()
+
+const handleDragStart = (event: DragEvent) => {
+  emit('dragstart', event)
+}
+
+const handleClick = () => {
+  emit('click', props.type)
+}
 </script>
 
 <style lang="scss" scoped>

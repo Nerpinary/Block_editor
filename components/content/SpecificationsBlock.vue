@@ -2,9 +2,9 @@
   <div class="specifications-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
     @dragstart="onDragStart" @dragend="onDragEnd">
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="emit('duplicate')" />
+      @duplicate="handleDuplicate" />
 
-    <DeleteBlockButton @delete="emit('remove')" />
+    <DeleteBlockButton @delete="handleDelete" />
 
     <div class="block-content">
       <div class="block-header flex items-center justify-between mb-4">
@@ -43,6 +43,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import { useBlockActions } from '@/composables/useBlockActions'
 import type { SpecificationsContent, SpecificationRow } from '@/types/content'
 import type { BlockData } from '@/types/blocks'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
@@ -71,11 +72,17 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'update:content': [content: SpecificationsContent]
+  'update:content': [{ content: SpecificationsContent }]
   'remove': []
   'duplicate': []
   'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
 }>()
+
+const { handleDelete, handleDuplicate, handleMove } = useBlockActions({
+  index: props.index,
+  parentId: props.parentId,
+  emit
+})
 
 const store = useEditorStore()
 const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
@@ -99,9 +106,7 @@ const initializeContent = (content: string | SpecificationsContent): Specificati
 }
 
 const updateContent = () => {
-  emit('update:content', {
-    rows: localRows.value
-  })
+  emit('update:content', { content: { rows: localRows.value } })
 }
 
 const addRow = () => {
@@ -128,12 +133,6 @@ const updateRowValue = (index: number, newValue: string) => {
     i === index ? { ...row, value: newValue } : row
   )
   updateContent()
-}
-
-const handleMove = (direction: 'up' | 'down') => {
-  const fromIndex = props.index
-  const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
-  store.moveBlock(fromIndex, toIndex)
 }
 
 const onDragStart = (event: DragEvent) => {

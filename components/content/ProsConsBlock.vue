@@ -2,9 +2,9 @@
   <div class="pros-cons-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
     @dragstart="onDragStart" @dragend="onDragEnd">
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="emit('duplicate')" />
+      @duplicate="handleDuplicate" />
 
-    <DeleteBlockButton @delete="emit('remove')" />
+    <DeleteBlockButton @delete="handleDelete" />
 
     <div class="block-content">
       <div class="block-header flex items-center justify-between mb-4">
@@ -48,6 +48,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import { useBlockActions } from '@/composables/useBlockActions'
 import type { ProsConsContent } from '@/types/content'
 import type { BlockData } from '@/types/blocks'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
@@ -56,7 +57,7 @@ import ThumbUpIcon from '@/components/icons/ThumbUpIcon.vue'
 import ThumbDownIcon from '@/components/icons/ThumbDownIcon.vue'
 
 interface Props {
-  content: string | ProsConsContent
+  content?: string | ProsConsContent
   index: number
   isLast: boolean
   parentId: string
@@ -74,11 +75,17 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'update:content': [content: ProsConsContent]
+  'update:content': [{ content: ProsConsContent }]
   'remove': []
   'duplicate': []
   'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
 }>()
+
+const { handleDelete, handleDuplicate, handleMove } = useBlockActions({
+  index: props.index,
+  parentId: props.parentId,
+  emit
+})
 
 const store = useEditorStore()
 const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
@@ -89,15 +96,7 @@ const localContent = ref<ProsConsContent>({
 })
 
 const updateContent = () => {
-  emit('update:content', { ...localContent.value })
-}
-
-const handleMove = (direction: 'up' | 'down') => {
-  emit('move', {
-    direction,
-    index: props.index,
-    parentId: props.parentId
-  })
+  emit('update:content', { content: localContent.value })
 }
 
 const onDragStart = (event: DragEvent) => {
@@ -126,25 +125,57 @@ const onDragStart = (event: DragEvent) => {
 }
 
 onMounted(() => {
-  const content = typeof props.content === 'string' 
-    ? JSON.parse(props.content) 
-    : props.content
-    
-  localContent.value = {
-    pros: content.pros || '',
-    cons: content.cons || ''
+  if (!props.content) {
+    localContent.value = {
+      pros: '',
+      cons: ''
+    }
+    return
+  }
+
+  try {
+    const content = typeof props.content === 'string' 
+      ? JSON.parse(props.content) 
+      : props.content
+      
+    localContent.value = {
+      pros: content?.pros || '',
+      cons: content?.cons || ''
+    }
+  } catch (error) {
+    console.warn('Failed to parse content:', error)
+    localContent.value = {
+      pros: '',
+      cons: ''
+    }
   }
 })
 
 watch(() => props.content, (newContent) => {
-  const content = typeof newContent === 'string' 
-    ? JSON.parse(newContent) 
-    : newContent
-    
-  if (JSON.stringify(content) !== JSON.stringify(localContent.value)) {
+  if (!newContent) {
     localContent.value = {
-      pros: content.pros || '',
-      cons: content.cons || ''
+      pros: '',
+      cons: ''
+    }
+    return
+  }
+
+  try {
+    const content = typeof newContent === 'string' 
+      ? JSON.parse(newContent) 
+      : newContent
+      
+    if (JSON.stringify(content) !== JSON.stringify(localContent.value)) {
+      localContent.value = {
+        pros: content?.pros || '',
+        cons: content?.cons || ''
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to parse content in watcher:', error)
+    localContent.value = {
+      pros: '',
+      cons: ''
     }
   }
 }, { deep: true })

@@ -8,8 +8,9 @@ import {
   query,
   orderBy,
   getDoc,
-  DocumentData,
-  QueryDocumentSnapshot
+  type DocumentData,
+  type QueryDocumentSnapshot,
+  type Firestore
 } from 'firebase/firestore'
 import { db } from '../plugins/firebase'
 
@@ -35,6 +36,11 @@ interface PageInput extends Omit<Page, 'id'> {
 
 const COLLECTION_NAME = 'pages'
 
+const getDB = (): Firestore => {
+  if (!db) throw new Error('Firebase is not initialized')
+  return db
+}
+
 const serializeBlock = (block: Block): Block => ({
   ...block,
   content: typeof block.content === 'object' 
@@ -52,7 +58,8 @@ const deserializePage = (
 export const firebaseService = {
   async getPages(): Promise<Page[]> {
     try {
-      const pagesRef = collection(db, COLLECTION_NAME)
+      const database = getDB()
+      const pagesRef = collection(database, COLLECTION_NAME)
       const q = query(pagesRef, orderBy('createdAt', 'desc'))
       const snapshot = await getDocs(q)
       return snapshot.docs.map(deserializePage)
@@ -64,7 +71,8 @@ export const firebaseService = {
 
   async savePage(page: PageInput): Promise<string> {
     try {
-      const pageRef = doc(collection(db, COLLECTION_NAME))
+      const database = getDB()
+      const pageRef = doc(collection(database, COLLECTION_NAME))
       
       const pageData: Page = {
         ...page,
@@ -83,10 +91,11 @@ export const firebaseService = {
 
   async updatePage(pageId: string | number, data: Partial<Page>): Promise<string> {
     try {
+      const database = getDB()
       const docId = String(pageId)
       console.log('Updating document with ID:', docId)
       
-      const pageRef = doc(db, COLLECTION_NAME, docId)
+      const pageRef = doc(database, COLLECTION_NAME, docId)
       const docSnap = await getDoc(pageRef)
       
       if (!docSnap.exists()) {
@@ -110,7 +119,8 @@ export const firebaseService = {
 
   async deletePage(pageId: string | number): Promise<void> {
     try {
-      const pageRef = doc(db, COLLECTION_NAME, String(pageId))
+      const database = getDB()
+      const pageRef = doc(database, COLLECTION_NAME, String(pageId))
       await deleteDoc(pageRef)
     } catch (error) {
       console.error('Error deleting page:', error)
@@ -120,7 +130,8 @@ export const firebaseService = {
 
   async getPage(pageId: string | number): Promise<Page | null> {
     try {
-      const pageRef = doc(db, COLLECTION_NAME, String(pageId))
+      const database = getDB()
+      const pageRef = doc(database, COLLECTION_NAME, String(pageId))
       const snapshot = await getDoc(pageRef)
       
       if (snapshot.exists()) {

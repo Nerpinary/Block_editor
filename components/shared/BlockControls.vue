@@ -7,7 +7,7 @@
 
       <div class="relative">
         <button 
-          @click="isMenuOpen = !isMenuOpen" 
+          @click="toggleMenu" 
           class="control-button" 
           title="Меню блока"
         >
@@ -22,7 +22,7 @@
           <button 
             v-if="index > 0" 
             class="menu-item" 
-            @click="moveBlock('up')"
+            @click="handleMove('up')"
           >
             <ChevronUpIcon :size="4" class="mr-2" />
             Переместить вверх
@@ -31,7 +31,7 @@
           <button 
             v-if="!isLast" 
             class="menu-item" 
-            @click="moveBlock('down')"
+            @click="handleMove('down')"
           >
             <ChevronDownIcon :size="4" class="mr-2" />
             Переместить вниз
@@ -39,7 +39,7 @@
 
           <button 
             class="menu-item" 
-            @click="emit('duplicate')"
+            @click="handleDuplicate"
           >
             <DuplicateIcon :size="4" class="mr-2" />
             Дублировать
@@ -87,8 +87,17 @@ const closeMenu = () => {
   isMenuOpen.value = false
 }
 
-const moveBlock = (direction: MoveDirection) => {
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+const handleMove = (direction: MoveDirection) => {
   emit('move', direction)
+  closeMenu()
+}
+
+const handleDuplicate = () => {
+  emit('duplicate')
   closeMenu()
 }
 

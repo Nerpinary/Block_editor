@@ -2,9 +2,7 @@
   <div class="editor-content max-w-4xl mx-auto p-8" @dragover="onDragOver" @drop="onDrop">
     <div v-for="(block, index) in blocks" :key="block.id" :data-index="index" class="editor-block mb-4"
       @dragenter.prevent @dragleave="onDragLeave">
-      <component :is="getComponentName(block.type)" :content="block.content" :index="index" :parent-id="'main-editor'"
-        :is-last="index === blocks.length - 1" :is-inside-column="false" @update:content="updateBlockContent(index, $event)"
-        @remove="store.removeBlock(index)" @duplicate="duplicateBlock(index)" />
+      <component :is="getComponentName(block.type)" v-bind="getComponentProps(block, index)" />
     </div>
 
     <div v-if="blocks.length === 0" class="text-center py-12 text-gray-500">
@@ -30,13 +28,14 @@ import ProsConsBlock from '@/components/content/ProsConsBlock.vue'
 import ListBlock from '@/components/content/ListBlock.vue'
 import TableBlock from '@/components/content/TableBlock.vue'
 import BlockMenu from '@/components/shared/BlockMenu.vue'
+import type { Component } from 'vue'
 
 const store = useEditorStore()
 const { onDragOver, onDragLeave, onDrop } = useDragAndDrop()
 
 const blocks = computed(() => store.blocks)
 
-const componentMap = {
+const componentMap: Record<BlockType, Component> = {
   'Text': TextBlock,
   'Heading': HeadingBlock,
   'Image': ImageBlock,
@@ -47,16 +46,19 @@ const componentMap = {
   'ProsCons': ProsConsBlock
 }
 
-const getComponentName = (type: BlockType) => {
+const getComponentName = (type: BlockType): Component => {
   return componentMap[type] || null
 }
 
 const updateBlockContent = async (index: number, content: BlockContent) => {
+  console.log('EditorContent updating block:', { index, content })
+  
   const updatedBlock: Block = {
     ...blocks.value[index],
     content: typeof content === 'object' ? { ...content } : content
   }
   
+  console.log('EditorContent sending to store:', updatedBlock)
   store.updateBlock({ index, block: updatedBlock })
   await nextTick()
 }
@@ -123,6 +125,17 @@ const getDefaultContent = (type: BlockType): BlockContent => {
       return ''
   }
 }
+
+const getComponentProps = (block: Block, index: number) => ({
+  content: block.content,
+  index,
+  parentId: 'main-editor',
+  isLast: index === blocks.value.length - 1,
+  isInsideColumn: false,
+  'onUpdate:content': (event: { content: any }) => updateBlockContent(index, event.content),
+  onRemove: () => store.removeBlock(index),
+  onDuplicate: () => duplicateBlock(index)
+})
 </script>
 
 <style lang="scss" scoped>

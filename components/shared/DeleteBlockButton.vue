@@ -1,7 +1,7 @@
 <template>
   <button
     class="delete-button"
-    @click="emit('delete')"
+    @click="handleDelete"
   >
     <DeleteIcon :size="4" />
   </button>
@@ -13,6 +13,11 @@ import { DeleteIcon } from '@/components/icons'
 const emit = defineEmits<{
   (e: 'delete'): void
 }>()
+
+const handleDelete = () => {
+  console.log('Delete button clicked')
+  emit('delete')
+}
 </script>
 
 <script lang="ts">

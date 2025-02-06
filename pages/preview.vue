@@ -20,7 +20,8 @@
       >
         <component
           :is="getPreviewComponent(block.type)"
-          :content="block.content"
+          :content="transformContentForPreview(block.content)"
+          @mounted="(comp) => console.log('Preview component mounted:', comp)"
         />
       </div>
     </main>
@@ -41,13 +42,16 @@ import {
   PreviewListBlock,
   PreviewTableBlock
 } from '@/components/preview'
-import type { Block } from '@/types/blocks'
+import type { Block, BlockContent } from '@/types/blocks'
 
 const store = useEditorStore()
 const route = useRoute()
 const router = useRouter()
 
-const blocks = computed<Block[]>(() => store.blocks)
+const blocks = computed<Block[]>(() => {
+  console.log('Preview blocks computed:', store.blocks)
+  return store.blocks
+})
 
 const previewComponents = {
   PreviewTextBlock,
@@ -60,13 +64,24 @@ const previewComponents = {
   PreviewTableBlock
 }
 
-const getPreviewComponent = (type: string): string => {
-  const componentName = `Preview${type}Block`
-  if (componentName in previewComponents) {
-    return componentName
+const transformContentForPreview = (content: BlockContent): any => {
+  if (content && typeof content === 'object' && 'columns' in content) {
+    return {
+      columns: content.columns.map((column: any[]) => 
+        column.map((block: { id: any; type: any; content: any }) => ({
+          id: block.id || Date.now().toString(),
+          type: block.type,
+          content: block.content
+        }))
+      )
+    }
   }
-  console.warn(`Preview component not found for type: ${type}`)
-  return 'div'
+  return content
+}
+
+const getPreviewComponent = (type: string) => {
+  const componentName = `Preview${type}Block`
+  return previewComponents[componentName as keyof typeof previewComponents] || 'div'
 }
 
 const goBack = () => {
@@ -78,11 +93,27 @@ const goBack = () => {
 }
 
 onMounted(() => {
-  // Проверяем, пришли ли мы с редактора
-  const fromEditor = !route.params.slug && !route.query.from
-  if (fromEditor) {
-    // Сохраняем текущие блоки перед предпросмотром
-    localStorage.setItem('temp_blocks', JSON.stringify(blocks.value))
+  const tempBlocks = localStorage.getItem('temp_blocks')
+  console.log('Loaded blocks in preview:', tempBlocks)
+  if (tempBlocks) {
+    try {
+      const blocks = JSON.parse(tempBlocks)
+      console.log('Parsed blocks:', blocks)
+      const validBlocks = blocks.map((block: Block) => {
+        if (block.type === 'Heading' && !block.content) {
+          block.content = {
+            text: '',
+            level: 1,
+            alignment: 'left',
+            color: '#1F2937'
+          }
+        }
+        return block
+      })
+      store.setBlocks(validBlocks)
+    } catch (error) {
+      console.error('Error parsing blocks:', error)
+    }
   }
 })
 
@@ -94,7 +125,6 @@ onBeforeRouteLeave((to) => {
 </script>
 
 <script lang="ts">
-// Для поддержки имени компонента в DevTools
 export default {
   name: 'PreviewPage'
 }

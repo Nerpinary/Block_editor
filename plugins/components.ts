@@ -1,7 +1,6 @@
-import { defineNuxtPlugin } from '#app'
+import { defineNuxtPlugin } from 'nuxt/app'
 import type { Component } from 'vue'
 
-// Импорты иконок
 import TextIcon from '@/components/icons/TextIcon.vue'
 import HeadingIcon from '@/components/icons/HeadingIcon.vue'
 import ImageIcon from '@/components/icons/ImageIcon.vue'
@@ -23,12 +22,10 @@ export default defineNuxtPlugin((nuxtApp) => {
     TableIcon
   }
 
-  // Регистрируем иконки глобально
   Object.entries(icons).forEach(([name, component]) => {
     nuxtApp.vueApp.component(name, component)
   })
 
-  // Предоставляем доступ к иконкам через provide
   return {
     provide: {
       icons

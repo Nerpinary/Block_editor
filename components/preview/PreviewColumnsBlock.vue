@@ -2,21 +2,21 @@
   <div class="columns-block mb-4">
     <div class="grid grid-cols-2 gap-4">
       <div class="left-column">
-        <component 
-          v-for="(block, index) in parsedContent.left" 
-          :key="`left-${index}`"
-          :is="getPreviewComponent(block.type)"
-          :content="block.content"
-        />
+        <template v-for="(block, index) in parsedContent.left" :key="`left-${index}`">
+          <component 
+            :is="getPreviewComponent(block.type)"
+            v-bind="getComponentProps(block)"
+          />
+        </template>
       </div>
 
       <div class="right-column">
-        <component 
-          v-for="(block, index) in parsedContent.right" 
-          :key="`right-${index}`"
-          :is="getPreviewComponent(block.type)"
-          :content="block.content"
-        />
+        <template v-for="(block, index) in parsedContent.right" :key="`right-${index}`">
+          <component 
+            :is="getPreviewComponent(block.type)"
+            v-bind="getComponentProps(block)"
+          />
+        </template>
       </div>
     </div>
   </div>
@@ -24,8 +24,18 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { Component } from 'vue'
 import type { ColumnsBlockContent, ColumnContent } from '@/types/content'
 import type { ContentBlock } from '@/types/blocks'
+import {
+  PreviewTextBlock,
+  PreviewHeadingBlock,
+  PreviewImageBlock,
+  PreviewListBlock,
+  PreviewTableBlock,
+  PreviewProsConsBlock,
+  PreviewSpecificationsBlock
+} from '@/components/preview'
 
 interface Props {
   content: ColumnsBlockContent | string
@@ -33,9 +43,24 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const getPreviewComponent = (type: string): string => {
-  return `Preview${type}Block`
+// Явно типизируем компоненты
+const previewComponents: Record<string, Component> = {
+  Text: PreviewTextBlock,
+  Heading: PreviewHeadingBlock,
+  Image: PreviewImageBlock,
+  List: PreviewListBlock,
+  Table: PreviewTableBlock,
+  ProsCons: PreviewProsConsBlock,
+  Specifications: PreviewSpecificationsBlock
 }
+
+const getPreviewComponent = (type: string): Component => {
+  return previewComponents[type] || 'div'
+}
+
+const getComponentProps = (block: ContentBlock) => ({
+  content: block.content
+})
 
 const parsedContent = computed<ColumnContent>(() => {
   if (typeof props.content === 'string') {

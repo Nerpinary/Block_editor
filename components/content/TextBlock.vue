@@ -2,9 +2,9 @@
   <div class="text-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
     @dragstart="onDragStart" @dragend="onDragEnd">
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="emit('duplicate')" />
+      @duplicate="handleDuplicate" />
 
-    <DeleteBlockButton @delete="emit('remove')" />
+    <DeleteBlockButton @delete="handleDelete" />
 
     <div class="block-content">
       <div class="block-header flex items-center mb-2">
@@ -35,6 +35,7 @@
 import { ref, watch, onMounted, nextTick, computed } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import { useBlockActions } from '@/composables/useBlockActions'
 import type { TextContent, TextAlign } from '@/types/content'
 import type { BlockData } from '@/types/blocks'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
@@ -62,11 +63,17 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'update:content': [content: TextContent]
+  'update:content': [{ content: TextContent }]
   'remove': []
   'duplicate': []
   'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
 }>()
+
+const { handleDelete, handleDuplicate, handleMove } = useBlockActions({
+  index: props.index,
+  parentId: props.parentId,
+  emit
+})
 
 const store = useEditorStore()
 const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
@@ -116,7 +123,7 @@ const handleInput = (event: Event) => {
     color: currentColor.value
   }
   
-  emit('update:content', updatedContent)
+  emit('update:content', { content: updatedContent })
 
   nextTick(() => {
     if (!selection.anchorNode) return
@@ -149,14 +156,6 @@ const applyTextCommand = (command: string, value?: string) => {
   restoreSelection()
   document.execCommand(command, false, value)
   saveSelection()
-}
-
-const handleMove = (direction: 'up' | 'down') => {
-  emit('move', {
-    direction,
-    index: props.index,
-    parentId: props.parentId
-  })
 }
 
 const onDragStart = (event: DragEvent) => {

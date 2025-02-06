@@ -25,9 +25,3 @@ withDefaults(defineProps<IconProps>(), {
   className: ''
 })
 </script>
-
-<script lang="ts">
-export default {
-  name: 'ImageIcon'
-}
-</script>

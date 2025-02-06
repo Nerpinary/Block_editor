@@ -1,23 +1,28 @@
-import { defineNuxtPlugin } from '#app'
-import { initializeApp } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
+import { defineNuxtPlugin, useRuntimeConfig } from 'nuxt/app'
+import { initializeApp, type FirebaseApp } from 'firebase/app'
+import { getFirestore, type Firestore } from 'firebase/firestore'
 
-// Создаем Firebase app и db вне плагина, чтобы они были доступны для импорта
-const firebaseConfig = {
-  apiKey: "AIzaSyBtyhVvhsZabNKtYCNWUYWVsTyHs1m_gOw",
-  authDomain: "blockeditor-ab41b.firebaseapp.com",
-  projectId: "blockeditor-ab41b",
-  storageBucket: "blockeditor-ab41b.firebasestorage.app",
-  messagingSenderId: "664484068128",
-  appId: "1:664484068128:web:60cade9c3e81c6dbcd7545",
-  measurementId: "G-VYG2QPG9W5"
-}
+let app: FirebaseApp | undefined
+let db: Firestore | undefined
 
-export const app = initializeApp(firebaseConfig)
-export const db = getFirestore(app)
-
-// Плагин для предоставления Firebase в контексте Nuxt
 export default defineNuxtPlugin(() => {
+  const config = useRuntimeConfig()
+  
+  if (process.client) {
+    const firebaseConfig = {
+      apiKey: config.public.firebase.apiKey,
+      authDomain: config.public.firebase.authDomain,
+      projectId: config.public.firebase.projectId,
+      storageBucket: config.public.firebase.storageBucket,
+      messagingSenderId: config.public.firebase.messagingSenderId,
+      appId: config.public.firebase.appId,
+      measurementId: config.public.firebase.measurementId
+    }
+
+    app = initializeApp(firebaseConfig)
+    db = getFirestore(app)
+  }
+
   return {
     provide: {
       firebase: {
@@ -26,4 +31,6 @@ export default defineNuxtPlugin(() => {
       }
     }
   }
-}) 
+})
+
+export { app, db } 

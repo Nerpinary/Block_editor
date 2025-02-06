@@ -3,6 +3,7 @@ import { useFirebase } from '@/composables/useFirebase'
 import type { Block, BlockConfig } from '@/types/blocks'
 import type { Page } from '@/types/page'
 import { firebaseService } from '@/services/firebase'
+import { toRaw } from 'vue'
 
 interface EditorState {
   blocks: Block[]
@@ -63,10 +64,21 @@ export const useEditorStore = defineStore('editor', {
 
   actions: {
     addBlock(block: Block) {
-      this.blocks.push({
+      const newBlock = {
         id: this.nextId++,
         ...block
-      })
+      }
+
+      if (block.type === 'Heading' && !block.content) {
+        newBlock.content = {
+          text: '',
+          level: 1,
+          alignment: 'left',
+          color: '#1F2937'
+        }
+      }
+
+      this.blocks.push(newBlock)
     },
 
     updateBlock({ index, block }: { index: number, block: Block }) {
@@ -74,16 +86,39 @@ export const useEditorStore = defineStore('editor', {
         console.error('Invalid index for update:', index)
         return
       }
+      
+      console.log('Block before update:', toRaw(this.blocks[index]))
+      
+      const updatedBlock = {
+        id: block.id,
+        type: block.type,
+        content: block.content
+      }
+      
       this.blocks = [
         ...this.blocks.slice(0, index),
-        { ...block },
+        updatedBlock,
         ...this.blocks.slice(index + 1)
       ]
+      
+      console.log('Block after update:', toRaw(this.blocks[index]))
+    },
+
+    insertBlock({ index, block }: { index: number, block: Block }) {
+      console.log('Inserting block:', { index, block })
+      this.blocks.splice(index, 0, block)
     },
 
     moveBlock(fromIndex: number, toIndex: number) {
+      console.log('Moving block:', { fromIndex, toIndex })
+      if (fromIndex === toIndex) return
+      
       const [movedBlock] = this.blocks.splice(fromIndex, 1)
-      this.blocks.splice(toIndex, 0, movedBlock)
+      if (movedBlock) {
+        this.blocks.splice(toIndex, 0, movedBlock)
+      } else {
+        console.error('Block not found at index:', fromIndex)
+      }
     },
 
     removeBlock(index: number) {

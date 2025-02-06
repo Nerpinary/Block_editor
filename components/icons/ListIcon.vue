@@ -30,9 +30,3 @@ withDefaults(defineProps<Props>(), {
   size: 6
 })
 </script>
-
-<script lang="ts">
-export default {
-  name: 'ListIcon'
-}
-</script> 

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { useEditorStore } from '@/stores/editor'
+import type { BlockType } from '@/types/blocks'
 
 interface DragState {
   isDragging: boolean
@@ -120,8 +121,20 @@ export function useDragAndDrop() {
     const sourceIndex = blockData.originalIndex
     const targetIndex = position === 'before' ? dropIndex : dropIndex + 1
     
-    if (sourceIndex !== targetIndex) {
-      store.moveBlock(sourceIndex, targetIndex)
+    if (sourceIndex !== targetIndex && targetIndex >= 0) {
+      if (blockData.source === 'editor' && sourceIndex >= 0) {
+        store.moveBlock(sourceIndex, targetIndex)
+      } else {
+        store.insertBlock({
+          index: targetIndex,
+          block: {
+            id: blockData.id || Date.now().toString(),
+            type: blockData.type as BlockType,
+            content: blockData.content,
+            parentId: ''
+          }
+        })
+      }
     }
   }
 

@@ -33,13 +33,13 @@
 
       <div class="mt-6 flex justify-end space-x-3">
         <button 
-          @click="emit('close')"
+          @click="handleClose"
           class="btn btn-secondary"
         >
           Отмена
         </button>
         <button 
-          @click="save"
+          @click="handleSave"
           class="btn btn-primary"
         >
           Сохранить
@@ -81,7 +81,14 @@ const generateSlug = () => {
     .replace(/^-+|-+$/g, '')
 }
 
-const save = async () => {
+const handleClose = () => {
+  console.log('Closing save dialog')
+  emit('close')
+}
+
+const handleSave = async () => {
+  console.log('Attempting to save page')
+  
   if (!title.value.trim() || !slug.value.trim()) {
     alert('Пожалуйста, заполните все поля')
     return
@@ -93,9 +100,11 @@ const save = async () => {
       slug: slug.value.trim()
     }
 
+    console.log('Saving page data:', pageData)
     emit('saved', pageData)
     emit('close')
   } catch (error) {
+    console.error('Error saving page:', error)
     alert('Ошибка при сохранении')
   }
 }

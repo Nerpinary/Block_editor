@@ -1,7 +1,7 @@
-import { defineNuxtPlugin } from '#app'
+import { defineNuxtPlugin } from 'nuxt/app'
+
 import type { Component } from 'vue'
 
-// Импорты блоков контента
 import TextBlock from '@/components/content/TextBlock.vue'
 import HeadingBlock from '@/components/content/HeadingBlock.vue'
 import ImageBlock from '@/components/content/ImageBlock.vue'
@@ -19,12 +19,10 @@ export default defineNuxtPlugin((nuxtApp) => {
     ColumnsBlock
   }
 
-  // Регистрируем компоненты глобально
   Object.entries(blocks).forEach(([name, component]) => {
     nuxtApp.vueApp.component(name, component)
   })
 
-  // Предоставляем доступ к компонентам через provide
   return {
     provide: {
       blocks

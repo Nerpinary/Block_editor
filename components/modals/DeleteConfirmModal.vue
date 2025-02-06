@@ -9,13 +9,13 @@
       </p>
       <div class="flex justify-end gap-3">
         <button
-          @click="$emit('cancel')"
+          @click="handleCancel"
           class="modal-button modal-button--gray"
         >
           Отмена
         </button>
         <button
-          @click="$emit('confirm')"
+          @click="handleConfirm"
           class="modal-button modal-button--red"
         >
           Удалить
@@ -28,14 +28,22 @@
 <script setup lang="ts">
 import type { Page } from '@/types/page'
 
-defineProps<{
+const props = defineProps<{
   page: Page | null
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'confirm'): void
   (e: 'cancel'): void
 }>()
+
+const handleConfirm = () => {
+  emit('confirm')
+}
+
+const handleCancel = () => {
+  emit('cancel')
+}
 </script>
 
 <style lang="scss" scoped>

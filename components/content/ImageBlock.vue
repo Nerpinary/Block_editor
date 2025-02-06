@@ -2,9 +2,9 @@
   <div class="image-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
     @dragstart="onDragStart" @dragend="onDragEnd">
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="emit('duplicate')" />
+      @duplicate="handleDuplicate" />
 
-    <DeleteBlockButton @delete="emit('remove')" />
+    <DeleteBlockButton @delete="handleDelete" />
 
     <div class="block-content">
       <div class="block-header flex items-center mb-2">
@@ -39,6 +39,7 @@
 import { ref, computed } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import { useBlockActions } from '@/composables/useBlockActions'
 import type { ImageContent } from '@/types/content'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import BlockControls from '@/components/shared/BlockControls.vue'
@@ -63,11 +64,18 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'update:content': [content: ImageContent]
+  'update:content': [{ content: ImageContent }]
   'remove': []
   'duplicate': []
+  'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
   'error': [message: string]
 }>()
+
+const { handleDelete, handleDuplicate, handleMove } = useBlockActions({
+  index: props.index,
+  parentId: props.parentId,
+  emit
+})
 
 const store = useEditorStore()
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -83,12 +91,6 @@ const imageContent = computed<ImageContent>(() => {
   }
   return props.content || { url: '', caption: '' }
 })
-
-const handleMove = (direction: 'up' | 'down') => {
-  const fromIndex = props.index
-  const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
-  store.moveBlock(fromIndex, toIndex)
-}
 
 const triggerFileInput = () => {
   fileInput.value?.click()
@@ -106,7 +108,8 @@ const handleFileChange = (event: Event) => {
         caption: imageContent.value.caption || ''
       }
 
-      emit('update:content', newContent)
+      console.log('Image block emitting new file:', newContent)
+      emit('update:content', { content: newContent })
 
       if (input) input.value = ''
     }
@@ -126,7 +129,8 @@ const updateCaption = (event: Event) => {
     url: imageContent.value.url,
     caption: input.value
   }
-  emit('update:content', updatedContent)
+  console.log('Image block emitting caption update:', updatedContent)
+  emit('update:content', { content: updatedContent })
 }
 
 const onDragStart = (event: DragEvent) => {

@@ -1,9 +1,9 @@
 <template>
   <div class="list-block border rounded p-4 relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
     @dragstart="onDragStart" @dragend="onDragEnd">
-    <DeleteBlockButton @delete="emit('remove')" />
+    <DeleteBlockButton @delete="handleDelete" />
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="emit('duplicate')" />
+      @duplicate="handleDuplicate" />
 
     <div class="block-content">
       <div class="block-header flex items-center justify-between mb-4">
@@ -49,6 +49,7 @@
 import { ref, watch } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import { useBlockActions } from '@/composables/useBlockActions'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import BlockControls from '@/components/shared/BlockControls.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
@@ -77,11 +78,17 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'update:content': [content: ListContent]
+  'update:content': [{ content: ListContent }]
   'remove': []
   'duplicate': []
   'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
 }>()
+
+const { handleDelete, handleDuplicate, handleMove } = useBlockActions({
+  index: props.index,
+  parentId: props.parentId,
+  emit
+})  
 
 const store = useEditorStore()
 const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
@@ -97,9 +104,7 @@ const initializeItems = () => {
 
 const updateContent = () => {
   const newItems = localItems.value.map(item => ({ ...item }))
-  emit('update:content', {
-    items: newItems
-  })
+  emit('update:content', { content: { items: newItems } })
 }
 
 const addItem = () => {
@@ -112,14 +117,6 @@ const removeItem = (index: number) => {
     localItems.value = localItems.value.filter((_, idx) => idx !== index)
     updateContent()
   }
-}
-
-const handleMove = (direction: 'up' | 'down') => {
-  emit('move', {
-    direction,
-    index: props.index,
-    parentId: props.parentId
-  })
 }
 
 const onDragStart = (event: DragEvent) => {

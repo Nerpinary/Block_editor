@@ -25,6 +25,7 @@ export interface Block {
   id?: number
   type: BlockType
   content: BlockContent
+  parentId: string
 }
 
 export interface ContentBlock {

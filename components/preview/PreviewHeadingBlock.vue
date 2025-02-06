@@ -24,6 +24,8 @@ interface Props {
 
 const props = defineProps<Props>()
 
+console.log('Preview heading content received:', props.content)
+
 const isValidHeadingLevel = (level: number): level is HeadingLevel => {
   return level >= 1 && level <= 6
 }
@@ -74,7 +76,11 @@ const parseContent = (content: string | HeadingContent): HeadingContent => {
   }
 }
 
-const parsedContent = computed(() => parseContent(props.content))
+const parsedContent = computed(() => {
+  const content = parseContent(props.content)
+  console.log('Parsed heading content:', content)
+  return content
+})
 
 const headingClasses = computed(() => ({
   'text-4xl': parsedContent.value.level === 1,

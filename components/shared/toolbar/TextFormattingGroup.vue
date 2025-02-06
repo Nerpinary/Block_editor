@@ -3,7 +3,7 @@
     <button 
       v-for="format in formats" 
       :key="format.command"
-      @click="$emit('format', format.command as TextFormatCommand)"
+      @click="handleFormat(format.command as TextFormatCommand)"
       class="toolbar-btn"
       :class="{ 'active': activeStates[format.command as keyof ActiveStates] }"
       :title="format.title"
@@ -29,11 +29,15 @@ interface Props {
   currentColor?: string
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'format', command: TextFormatCommand): void
 }>()
+
+const handleFormat = (command: TextFormatCommand) => {
+  emit('format', command)
+}
 </script>
 
 <style lang="scss" scoped>

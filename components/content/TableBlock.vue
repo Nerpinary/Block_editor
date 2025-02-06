@@ -1,9 +1,9 @@
 <template>
   <div class="table-block border rounded p-4 relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
     @dragstart="onDragStart" @dragend="onDragEnd">
-    <DeleteBlockButton @delete="emit('remove')" />
+    <DeleteBlockButton @delete="handleDelete" />
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="emit('duplicate')" />
+      @duplicate="handleDuplicate" />
 
     <div class="block-content">
       <div class="block-header flex items-center justify-between mb-4">
@@ -71,6 +71,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import { useBlockActions } from '@/composables/useBlockActions'
 import type { TableContent } from '@/types/content'
 import type { BlockData } from '@/types/blocks'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
@@ -99,11 +100,17 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'update:content': [content: TableContent]
+  'update:content': [{ content: TableContent }]
   'remove': []
   'duplicate': []
   'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
 }>()
+
+const { handleDelete, handleDuplicate, handleMove } = useBlockActions({
+  index: props.index,
+  parentId: props.parentId,
+  emit
+})
 
 const store = useEditorStore()
 const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
@@ -111,9 +118,7 @@ const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
 const localData = ref<string[][]>([['', ''], ['', '']])
 
 const updateContent = () => {
-  emit('update:content', {
-    data: localData.value.map(row => [...row])
-  })
+  emit('update:content', { content: { data: localData.value.map(row => [...row]) } })
 }
 
 const addRow = () => {
@@ -139,14 +144,6 @@ const removeColumn = () => {
     localData.value = localData.value.map(row => row.slice(0, -1))
     updateContent()
   }
-}
-
-const handleMove = (direction: 'up' | 'down') => {
-  emit('move', {
-    direction,
-    index: props.index,
-    parentId: props.parentId
-  })
 }
 
 const onDragStart = (event: DragEvent) => {

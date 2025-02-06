@@ -102,7 +102,8 @@ const getDefaultContent = (type: BlockType): any => {
 const addBlock = (type: BlockType) => {
   const block: Block = {
     type,
-    content: getDefaultContent(type)
+    content: getDefaultContent(type),
+    parentId: ''
   }
   store.addBlock(block)
 }

@@ -14,9 +14,3 @@ withDefaults(defineProps<IconProps>(), {
   className: ''
 })
 </script>
-
-<script lang="ts">
-export default {
-  name: 'DuplicateIcon'
-}
-</script>

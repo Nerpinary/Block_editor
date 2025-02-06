@@ -14,9 +14,9 @@
       :index="index" 
       :is-last="isLast" 
       @move="handleMove"
-      @duplicate="emit('duplicate')" 
+      @duplicate="handleDuplicate" 
     />
-    <DeleteBlockButton @delete="emit('remove')" />
+    <DeleteBlockButton @delete="handleDelete" />
 
     <div class="heading-content">
       <div class="heading-header">
@@ -59,11 +59,12 @@ import { useEditorStore } from '@/stores/editor'
 import type { CSSProperties } from 'vue'
 import type { HeadingContent, TextAlign, HeadingLevel } from '@/types/content'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import { useBlockActions } from '@/composables/useBlockActions'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import BlockControls from '@/components/shared/BlockControls.vue'
 import FormatToolbar from '@/components/shared/toolbar/FormatToolbar.vue'
 import HeadingLevelSelector from '@/components/shared/HeadingLevelSelector.vue'
-import type { BlockData } from '@/types/blocks'
+import type { BlockData, Block } from '@/types/blocks'
 
 interface Props {
   content: string | HeadingContent
@@ -86,11 +87,17 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'update:content': [content: string]
+  'update:content': [{ content: HeadingContent }]
   'remove': []
   'duplicate': []
-  'move': [direction: 'up' | 'down']
+  'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
 }>()
+
+const { handleDelete, handleDuplicate, handleMove } = useBlockActions({
+  index: props.index,
+  parentId: props.parentId,
+  emit
+})
 
 const store = useEditorStore()
 const editorRef = ref<HTMLDivElement | null>(null)
@@ -198,44 +205,44 @@ const applyColor = (color: string) => {
 }
 
 const updateContent = () => {
-  const content = JSON.stringify({
-    text: localContent.value,
-    alignment: currentAlignment.value,
-    color: currentColor.value,
-    level: currentLevel.value
-  })
-  emit('update:content', content)
-}
-
-const onDragStart = (event: DragEvent) => {
-  if (!event.dataTransfer) return
-  
-  const currentContent = {
+  const content: HeadingContent = {
     text: localContent.value,
     alignment: currentAlignment.value,
     color: currentColor.value,
     level: currentLevel.value
   }
   
+  emit('update:content', { content })
+}
+
+const onDragStart = (event: DragEvent) => {
+  if (!event.dataTransfer) return
+  
+  const currentContent: HeadingContent = {
+    text: localContent.value,
+    alignment: currentAlignment.value,
+    color: currentColor.value,
+    level: currentLevel.value
+  }
+    
   const blockData: BlockData = {
     type: 'Heading',
     index: props.index,
     originalIndex: props.index,
     parentId: props.parentId,
     source: 'editor',
-    content: currentContent,
+    content: { content: currentContent },
     originalBlock: {
       type: 'Heading',
-      content: currentContent
+      content: { content: currentContent }
     }
   }
 
-  console.log('Setting drag data:', blockData)
-  
   try {
     const jsonData = JSON.stringify(blockData)
     event.dataTransfer.setData('application/json', jsonData)
     startDrag(event, blockData)
+    console.log('Drag data set:', blockData)
   } catch (error) {
     console.error('Error setting drag data:', error)
   }
@@ -250,15 +257,10 @@ const updateHeadingLevel = (level: HeadingLevel) => {
   updateContent()
 }
 
-const handleMove = (direction: 'up' | 'down') => {
-  const fromIndex = props.index
-  const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
-  store.moveBlock(fromIndex, toIndex)
-}
-
 onMounted(() => {
   if (editorRef.value) {
     editorRef.value.innerHTML = localContent.value
+    updateContent()
   }
 })
 </script>

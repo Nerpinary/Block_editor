@@ -1,8 +1,8 @@
 <template>
   <div class="columns-block border rounded p-4 relative group">
-    <DeleteBlockButton @delete="emit('remove')" />
+    <DeleteBlockButton @delete="handleDelete" />
 
-    <BlockControls :index="index" :is-last="isLast" @move="handleMove" @duplicate="emit('duplicate')" />
+    <BlockControls :index="index" :is-last="isLast" @move="handleMove" @duplicate="handleDuplicate" />
 
     <div class="flex gap-4">
       <div v-for="(column, columnIndex) in localColumns" :key="`column-${index}-${columnIndex}`" class="flex-1">
@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, nextTick } from 'vue'
 import { useEditorStore } from '@/stores/editor'
+import { useBlockActions } from '@/composables/useBlockActions'
 import { BLOCK_TYPES } from '@/constants/blocks'
 import type { ColumnsContent } from '@/types/content'
 import type { Block, BlockType } from '@/types/blocks'
@@ -59,8 +60,15 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'remove': []
   'duplicate': []
-  'move': [payload: { direction: 'up' | 'down', index: number }]
+  'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
+  'update:content': [payload: any]
 }>()
+
+const { handleDelete, handleDuplicate, handleMove } = useBlockActions({
+  index: props.index,
+  parentId: props.parentId,
+  emit
+})
 
 const store = useEditorStore()
 const localColumns = ref<Block[][]>([[], []])
@@ -90,9 +98,17 @@ const handleDropIntoColumn = (event: DropEvent, columnIndex: number) => {
     const blockToAdd: Block = {
       id: dropData.id || Date.now().toString(),
       type: dropData.type as BlockType,
-      content: dropData.originalBlock?.content || dropData.content
+      content: dropData.originalBlock?.content || dropData.content,
+      parentId: ''
     }
+    
+    console.log('Drop data:', dropData)
+    console.log('Block to add:', blockToAdd)
 
+    if (dropData.content && 'content' in dropData.content) {
+      blockToAdd.content = dropData.content.content
+    }
+    
     const newColumns = localColumns.value.map(column => [...column])
     newColumns[columnIndex] = [...newColumns[columnIndex], blockToAdd]
     
@@ -113,12 +129,14 @@ const parseColumnSource = (source: string): [number, number] => {
 }
 
 const updateBlockContent = (columnIndex: number, blockIndex: number, newContent: any) => {
+  console.log('Updating block content:', newContent)
+  
   const newColumns = localColumns.value.map(column => [...column])
 
   if (newColumns[columnIndex][blockIndex]) {
     newColumns[columnIndex][blockIndex] = {
       ...newColumns[columnIndex][blockIndex],
-      content: newContent
+      content: newContent.content || newContent
     }
 
     localColumns.value = newColumns
@@ -133,19 +151,13 @@ const removeBlockFromColumn = (columnIndex: number, blockIndex: number) => {
   updateStore()
 }
 
-const handleMove = (direction: 'up' | 'down') => {
-  emit('move', {
-    direction,
-    index: props.index
-  })
-}
-
 const updateStore = () => {
   const updatedBlock: Block = {
     type: 'Columns',
-    content: {
+    content: { 
       columns: JSON.parse(JSON.stringify(localColumns.value))
-    }
+    },
+    parentId: ''
   }
 
   store.updateBlock({
