@@ -41,7 +41,7 @@ import {
   PreviewListBlock,
   PreviewTableBlock
 } from '@/components/preview'
-import type { Block } from '@/types'
+import type { Block } from '@/types/blocks'
 
 const store = useEditorStore()
 const route = useRoute()

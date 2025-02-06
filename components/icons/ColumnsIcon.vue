@@ -16,7 +16,6 @@ withDefaults(defineProps<IconProps>(), {
 </script>
 
 <script lang="ts">
-// Для поддержки имени компонента в DevTools
 export default {
   name: 'ColumnsIcon'
 }

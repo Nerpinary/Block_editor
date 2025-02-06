@@ -81,11 +81,9 @@ const handleSave = async (pageData: PageData) => {
     })
     
     showSaveDialog.value = false
-    // Можно добавить уведомление об успешном сохранении
-    router.push('/saved-pages') // или другой редирект после сохранения
+    router.push('/saved-pages')
   } catch (error) {
     console.error('Error saving page:', error)
-    // Можно добавить уведомление об ошибке
   }
 }
 
@@ -94,9 +92,7 @@ const onPageSaved = async (pageData: PageData) => {
 }
 
 const handlePreview = () => {
-  // Сохраняем текущие блоки в localStorage перед переходом
   localStorage.setItem('temp_blocks', JSON.stringify(store.blocks))
-  // Переходим на страницу предпросмотра
   router.push('/preview')
 }
 
@@ -112,11 +108,10 @@ onMounted(async () => {
       pageSlug.value = page.slug
     }
   } else if (fromPreview) {
-    // Восстанавливаем блоки из временного хранилища
     const tempBlocks = localStorage.getItem('temp_blocks')
     if (tempBlocks) {
       store.setBlocks(JSON.parse(tempBlocks))
-      localStorage.removeItem('temp_blocks') // Очищаем после восстановления
+      localStorage.removeItem('temp_blocks')
     }
   } else {
     store.setBlocks([])

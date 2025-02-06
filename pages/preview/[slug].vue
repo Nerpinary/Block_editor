@@ -2,7 +2,8 @@
 import { computed, onMounted } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { useRoute, useRouter } from 'vue-router'
-import type { Block, Page } from '@/types'
+import type { Block } from '@/types/blocks'
+import type { Page } from '@/types/page'
 
 const store = useEditorStore()
 const route = useRoute()
@@ -24,7 +25,6 @@ const goBack = (): void => {
 
 const loadPageBySlug = async (slug: string): Promise<void> => {
   try {
-    // Сначала загружаем список страниц, если он еще не загружен
     if (!store.savedPages.length) {
       await store.loadSavedPages()
     }
@@ -54,5 +54,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<!-- остальной код без изменений --> 

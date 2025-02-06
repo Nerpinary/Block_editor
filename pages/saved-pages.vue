@@ -74,7 +74,7 @@ import { useEditorStore } from '@/stores/editor'
 import { useRouter } from 'vue-router'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
-import type { Page } from '@/types'
+import type { Page } from '@/types/page'
 
 const store = useEditorStore()
 const router = useRouter()

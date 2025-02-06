@@ -14,10 +14,8 @@ import DotsVerticalIcon from './DotsVerticalIcon.vue'
 import ThumbUpIcon from './ThumbUpIcon.vue'
 import ThumbDownIcon from './ThumbDownIcon.vue'
 
-// Типы для иконок
 export type IconComponent = typeof BaseIcon
 
-// Объект со всеми иконками для удобного импорта
 export const Icons = {
   BaseIcon,
   TextIcon,
@@ -35,7 +33,6 @@ export const Icons = {
   ThumbDownIcon
 } as const
 
-// Именованные экспорты для отдельного импорта
 export {
   BaseIcon,
   TextIcon,
@@ -53,5 +50,4 @@ export {
   ThumbDownIcon
 }
 
-// Экспорт по умолчанию
 export default Icons 
