@@ -3,10 +3,15 @@
     <div class="table-responsive">
       <table class="w-full border-collapse border">
         <tbody>
-          <tr v-for="(row, rowIndex) in tableData" :key="rowIndex" class="border-b">
-            <td v-for="(cell, colIndex) in row" 
-                :key="colIndex" 
-                class="border-r p-2 last:border-r-0"
+          <tr 
+            v-for="(row, rowIndex) in tableData" 
+            :key="rowIndex" 
+            class="border-b"
+          >
+            <td 
+              v-for="(cell, colIndex) in row" 
+              :key="colIndex" 
+              class="border-r p-2 last:border-r-0"
             >
               {{ cell }}
             </td>
@@ -17,44 +22,50 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'PreviewTableBlock',
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { TableContent } from '@/types/content'
 
-  props: {
-    content: {
-      type: Object,
-      default: () => ({
-        data: [
-          ['', ''],
-          ['', '']
-        ]
-      })
-    }
-  },
+const defaultTable = [
+  ['', ''],
+  ['', '']
+]
 
-  computed: {
-    tableData() {
-      return this.content?.data || [['', ''], ['', '']]
-    }
+interface Props {
+  content: {
+    data: string[][]
   }
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  content: () => ({
+    data: [['', ''], ['', '']]
+  })
+})
+
+const tableData = computed(() => props.content?.data || defaultTable)
+</script>
+
+<script lang="ts">
+export default {
+  name: 'PreviewTableBlock'
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .table-responsive {
-  overflow-x: auto;
+  @apply overflow-x-auto;
 }
 
 table {
-  border-color: #e2e8f0;
+  @apply border-gray-200;
 }
 
 td {
-  border-color: #e2e8f0;
-}
+  @apply border-gray-200;
 
-td:empty::before {
-  content: '\00a0';
+  &:empty::before {
+    content: '\00a0';
+  }
 }
 </style> 

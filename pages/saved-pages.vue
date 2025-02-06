@@ -1,21 +1,23 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <div class="h-14 border-b bg-white px-4 flex items-center justify-between sticky top-0 z-10">
-      <h1 class="text-lg font-medium text-gray-900">Сохраненные страницы</h1>
+  <div class="saved-pages min-h-screen bg-gray-50">
+    <header class="saved-pages__header">
+      <h1 class="text-lg font-medium text-gray-900">
+        Сохраненные страницы
+      </h1>
       <button
-        @click="$router.push('/')"
-        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        @click="router.push('/')"
+        class="create-button"
       >
         Создать новую
       </button>
-    </div>
+    </header>
 
-    <div class="max-w-4xl mx-auto p-8">
+    <main class="max-w-4xl mx-auto p-8">
       <div v-if="savedPages.length" class="space-y-4">
         <div 
           v-for="page in savedPages" 
           :key="page.id"
-          class="bg-white rounded-lg shadow p-4 flex items-center justify-between relative group"
+          class="page-card group"
         >
           <div>
             <h2 class="text-xl font-medium">{{ page.title }}</h2>
@@ -23,20 +25,20 @@
               /{{ page.slug }}
             </p>
             <p class="text-gray-400 text-sm mt-1">
-              Создано: {{ new Date(page.createdAt).toLocaleDateString() }}
+              Создано: {{ formatDate(page.createdAt) }}
             </p>
           </div>
           
           <div class="flex gap-2">
             <button
               @click="editPage(page)"
-              class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              class="action-button action-button--gray"
             >
               Редактировать
             </button>
             <button
               @click="previewPage(page)"
-              class="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              class="action-button action-button--blue"
             >
               Просмотр
             </button>
@@ -51,106 +53,132 @@
 
       <div 
         v-else 
-        class="text-center py-12 text-gray-500"
+        class="empty-state"
       >
         Нет сохраненных страниц
       </div>
 
-      <!-- Модальное окно подтверждения удаления -->
-      <div 
-        v-if="showDeleteConfirm" 
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      >
-        <div class="bg-white rounded-lg p-6 w-[400px] shadow-xl">
-          <h3 class="text-lg font-medium mb-4">Подтверждение удаления</h3>
-          <p class="text-gray-600 mb-6">
-            Вы уверены, что хотите удалить страницу "{{ pageToDelete?.title }}"?
-          </p>
-          <div class="flex justify-end gap-3">
-            <button
-              @click="showDeleteConfirm = false"
-              class="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-            >
-              Отмена
-            </button>
-            <button
-              @click="deletePage"
-              class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-            >
-              Удалить
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <DeleteConfirmModal
+        v-if="showDeleteConfirm"
+        :page="pageToDelete"
+        @confirm="deletePage"
+        @cancel="closeDeleteModal"
+      />
+    </main>
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useEditorStore } from '@/stores/editor'
+import { useRouter } from 'vue-router'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
+import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
+import type { Page } from '@/types'
 
-export default {
-  name: 'SavedPages',
+const store = useEditorStore()
+const router = useRouter()
 
-  components: {
-    DeleteBlockButton
-  },
+const showDeleteConfirm = ref(false)
+const pageToDelete = ref<Page | null>(null)
 
-  data() {
-    return {
-      showDeleteConfirm: false,
-      pageToDelete: null
-    }
-  },
+const savedPages = computed<Page[]>(() => store.savedPages)
 
-  computed: {
-    savedPages() {
-      return this.$store.state.savedPages
-    }
-  },
+const formatDate = (date: string | number): string => {
+  return new Date(date).toLocaleDateString()
+}
 
-  mounted() {
-    this.$store.dispatch('loadSavedPages')
-  },
+const editPage = async (page: Page) => {
+  await store.loadPage(page.id)
+  router.push(`/?edit=${page.id}`)
+}
 
-  methods: {
-    async editPage(page) {
-      await this.$store.dispatch('loadPage', page.id)
-      this.$router.push(`/?edit=${page.id}`)
-    },
+const previewPage = (page: Page) => {
+  store.loadPage(page.id)
+  router.push(`/preview/${page.slug}`)
+}
 
-    previewPage(page) {
-      this.$store.dispatch('loadPage', page.id)
-      this.$router.push(`/preview/${page.slug}`)
-    },
+const confirmDelete = (page: Page) => {
+  pageToDelete.value = page
+  showDeleteConfirm.value = true
+}
 
-    confirmDelete(page) {
-      this.pageToDelete = page
-      this.showDeleteConfirm = true
-    },
+const closeDeleteModal = () => {
+  showDeleteConfirm.value = false
+  pageToDelete.value = null
+}
 
-    async deletePage() {
-      if (!this.pageToDelete) return
+const deletePage = async () => {
+  if (!pageToDelete.value) return
 
-      try {
-        await this.$store.dispatch('deletePage', this.pageToDelete.id)
-        this.showDeleteConfirm = false
-        this.pageToDelete = null
-      } catch (error) {
-        alert('Ошибка при удалении страницы')
-      }
-    }
+  try {
+    await store.deletePage(pageToDelete.value.id)
+    closeDeleteModal()
+  } catch (error) {
+    console.error('Error deleting page:', error)
+    alert('Ошибка при удалении страницы')
   }
+}
+
+onMounted(() => {
+  store.loadSavedPages()
+})
+</script>
+
+<script lang="ts">
+export default {
+  name: 'SavedPages'
 }
 </script>
 
-<style scoped>
-.group:hover :deep(.delete-button) {
-  opacity: 1;
+<style lang="scss" scoped>
+.saved-pages {
+  &__header {
+    @apply h-14 border-b bg-white px-4;
+    @apply flex items-center justify-between;
+    @apply sticky top-0 z-10;
+  }
 }
 
-:deep(.delete-button) {
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
+.create-button {
+  @apply px-4 py-2 rounded-lg;
+  @apply bg-blue-500 text-white;
+  @apply hover:bg-blue-600;
+  @apply transition-colors duration-200;
+}
+
+.page-card {
+  @apply bg-white rounded-lg shadow p-4;
+  @apply flex items-center justify-between;
+  @apply relative;
+
+  :deep(.delete-button) {
+    @apply opacity-0 transition-opacity duration-200;
+  }
+
+  &:hover {
+    :deep(.delete-button) {
+      @apply opacity-100;
+    }
+  }
+}
+
+.action-button {
+  @apply px-3 py-1.5 rounded;
+  @apply transition-colors duration-200;
+
+  &--gray {
+    @apply bg-gray-100 text-gray-700;
+    @apply hover:bg-gray-200;
+  }
+
+  &--blue {
+    @apply bg-blue-500 text-white;
+    @apply hover:bg-blue-600;
+  }
+}
+
+.empty-state {
+  @apply text-center py-12 text-gray-500;
 }
 </style> 

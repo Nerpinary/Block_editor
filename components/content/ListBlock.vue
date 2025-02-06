@@ -1,9 +1,9 @@
 <template>
   <div class="list-block border rounded p-4 relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
-    @dragstart="onDragStart($event)" @dragend="onDragEnd">
-    <DeleteBlockButton @delete="$emit('remove')" />
+    @dragstart="onDragStart" @dragend="onDragEnd">
+    <DeleteBlockButton @delete="emit('remove')" />
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="$emit('duplicate')" />
+      @duplicate="emit('duplicate')" />
 
     <div class="block-content">
       <div class="block-header flex items-center justify-between mb-4">
@@ -45,127 +45,139 @@
   </div>
 </template>
 
-<script>
-import dragdrop from '@/mixins/dragdrop'
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+import { useEditorStore } from '@/stores/editor'
+import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import BlockControls from '@/components/shared/BlockControls.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
 import MinusIcon from '@/components/icons/MinusIcon.vue'
+import type { ListContent, ListItem } from '@/types/content'
+import type { BlockData } from '@/types/blocks'
 
-export default {
-  name: 'ListBlock',
+interface Props {
+  content: string | ListContent
+  index: number
+  isLast: boolean
+  parentId: string
+  isInsideColumn: boolean
+}
 
-  components: {
-    DeleteBlockButton,
-    BlockControls,
-    PlusIcon,
-    MinusIcon
-  },
+const props = withDefaults(defineProps<Props>(), {
+  content: () => ({
+    items: [
+      { text: '' },
+      { text: '' }
+    ]
+  }),
+  parentId: 'main-editor',
+  isLast: false,
+  isInsideColumn: false
+})
 
-  mixins: [dragdrop],
+const emit = defineEmits<{
+  'update:content': [content: ListContent]
+  'remove': []
+  'duplicate': []
+  'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
+}>()
 
-  props: {
-    content: {
-      type: [Object, String],
-      default: () => ({
-        items: [
-          { text: '' },
-          { text: '' }
-        ]
-      })
-    },
-    index: {
-      type: Number,
-      required: true
-    },
-    isLast: {
-      type: Boolean,
-      default: false
-    },
-    parentId: {
-      type: String,
-      default: null
-    },
-    isInsideColumn: {
-      type: Boolean,
-      default: false
-    }
-  },
+const store = useEditorStore()
+const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
 
-  data() {
-    return {
-      localItems: [],
-      dragState: {
-        isDragging: false
-      }
-    }
-  },
+const localItems = ref<ListItem[]>([])
 
-  created() {
-    const initialContent = typeof this.content === 'string' ? { items: [{ text: '' }, { text: '' }] } : this.content
-    this.localItems = JSON.parse(JSON.stringify(initialContent.items || [{ text: '' }, { text: '' }]))
-  },
+const initializeItems = () => {
+  const initialContent = typeof props.content === 'string' 
+    ? { items: [{ text: '' }, { text: '' }] } 
+    : props.content
+  localItems.value = JSON.parse(JSON.stringify(initialContent.items || [{ text: '' }, { text: '' }]))
+}
 
-  methods: {
-    updateContent() {
-      const newItems = this.localItems.map(item => ({ ...item }))
-      this.$emit('update:content', {
-        items: newItems
-      })
-    },
+const updateContent = () => {
+  const newItems = localItems.value.map(item => ({ ...item }))
+  emit('update:content', {
+    items: newItems
+  })
+}
 
-    addItem() {
-      const newItems = [...this.localItems, { text: '' }]
-      this.localItems = newItems
-      this.updateContent()
-    },
+const addItem = () => {
+  localItems.value = [...localItems.value, { text: '' }]
+  updateContent()
+}
 
-    removeItem(index) {
-      if (this.localItems.length > 2) {
-        const newItems = [...this.localItems]
-        newItems.splice(index, 1)
-        this.localItems = newItems
-        this.updateContent()
-      }
-    },
-
-    handleMove(direction) {
-      this.$emit('move', {
-        direction,
-        index: this.index,
-        parentId: this.parentId
-      })
-    }
-  },
-
-  watch: {
-    'content.items': {
-      handler(newItems) {
-        if (newItems && JSON.stringify(newItems) !== JSON.stringify(this.localItems)) {
-          this.localItems = JSON.parse(JSON.stringify(newItems))
-        }
-      },
-      deep: true
-    }
+const removeItem = (index: number) => {
+  if (localItems.value.length > 2) {
+    localItems.value = localItems.value.filter((_, idx) => idx !== index)
+    updateContent()
   }
 }
+
+const handleMove = (direction: 'up' | 'down') => {
+  emit('move', {
+    direction,
+    index: props.index,
+    parentId: props.parentId
+  })
+}
+
+const onDragStart = (event: DragEvent) => {
+  if (!event.dataTransfer) return
+  
+  const blockData: BlockData = {
+    type: 'List',
+    index: props.index,
+    originalIndex: props.index,
+    parentId: props.parentId,
+    source: 'editor',
+    content: {
+      items: localItems.value
+    },
+    originalBlock: {
+      type: 'List',
+      content: {
+        items: localItems.value
+      }
+    }
+  }
+
+  try {
+    const jsonData = JSON.stringify(blockData)
+    event.dataTransfer.setData('application/json', jsonData)
+    startDrag(event, blockData)
+  } catch (error) {
+    console.error('Error setting drag data:', error)
+  }
+}
+
+watch(() => props.content, (newContent) => {
+  const items = typeof newContent === 'string' 
+    ? JSON.parse(newContent).items 
+    : newContent.items
+    
+  if (items && JSON.stringify(items) !== JSON.stringify(localItems.value)) {
+    localItems.value = JSON.parse(JSON.stringify(items))
+  }
+}, { deep: true })
+
+initializeItems()
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .list-block {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
+  @apply bg-white rounded-xl shadow-sm;
 
-.list-block :deep(.block-controls),
-.list-block :deep(.delete-button) {
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-}
+  :deep(.block-controls),
+  :deep(.delete-button) {
+    @apply opacity-0 transition-opacity duration-200;
+  }
 
-.list-block:hover :deep(.block-controls),
-.list-block:hover :deep(.delete-button) {
-  opacity: 1;
+  &:hover {
+    :deep(.block-controls),
+    :deep(.delete-button) {
+      @apply opacity-100;
+    }
+  }
 }
 </style> 

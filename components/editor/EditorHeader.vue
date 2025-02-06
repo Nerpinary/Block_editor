@@ -2,19 +2,23 @@
   <div class="h-14 border-b bg-white px-4 flex items-center justify-between">
     <h1 class="text-lg font-medium text-gray-900">{{ title }}</h1>
     <div class="flex gap-2">
-      <button v-for="action in actions" :key="action.name" @click="$emit(action.event)"
-        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+      <button 
+        v-for="action in actions" 
+        :key="action.name" 
+        @click="handleAction(action.event)"
+        class="btn btn-primary"
+      >
         {{ action.name }}
       </button>
       <button 
         @click="handleSave"
-        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        class="btn btn-primary"
       >
         Сохранить
       </button>
       <button 
-        @click="$router.push('/saved-pages')"
-        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        @click="router.push('/saved-pages')"
+        class="btn btn-secondary"
       >
         Все страницы
       </button>
@@ -28,63 +32,83 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import type { PageData } from '@/types/page'
+import type { EditorAction } from '@/types/editor'
 import SavePageDialog from './SavePageDialog.vue'
 
-export default {
-  name: 'EditorHeader',
-  
-  components: {
-    SavePageDialog
-  },
+interface Props {
+  title?: string
+  actions?: EditorAction[]
+  currentPageId?: string | number | null
+  pageTitle?: string
+  pageSlug?: string
+}
 
-  props: {
-    title: {
-      type: String,
-      default: 'Редактор'
-    },
-    actions: {
-      type: Array,
-      default: () => [
-        { name: 'Предпросмотр', event: 'preview' }
-      ]
-    },
-    currentPageId: {
-      type: [String, Number],
-      default: null
-    },
-    pageTitle: {
-      type: String,
-      default: ''
-    },
-    pageSlug: {
-      type: String,
-      default: ''
+const props = withDefaults(defineProps<Props>(), {
+  title: 'Редактор',
+  actions: () => [
+    { name: 'Предпросмотр', event: 'preview' }
+  ],
+  currentPageId: null,
+  pageTitle: '',
+  pageSlug: ''
+})
+
+const emit = defineEmits<{
+  preview: []
+  saved: [data: PageData]
+  [key: string]: any[]
+}>()
+
+const router = useRouter()
+const showSaveDialog = ref(false)
+
+const handleAction = (event: string) => {
+  try {
+    emit(event)
+  } catch (error) {
+    console.error(`Error handling action ${event}:`, error)
+  }
+}
+
+const handleSave = () => {
+  try {
+    if (props.currentPageId) {
+      emit('saved', {
+        title: props.pageTitle,
+        slug: props.pageSlug
+      })
+    } else {
+      showSaveDialog.value = true
     }
-  },
+  } catch (error) {
+    console.error('Error handling save:', error)
+  }
+}
 
-  data() {
-    return {
-      showSaveDialog: false
-    }
-  },
-
-  methods: {
-    handleSave() {
-      if (this.currentPageId) {
-        this.$emit('saved', {
-          title: this.pageTitle,
-          slug: this.pageSlug
-        })
-      } else {
-        this.showSaveDialog = true
-      }
-    },
-
-    onPageSaved(pageData) {
-      this.$emit('saved', pageData)
-      this.showSaveDialog = false
-    }
+const onPageSaved = (data: PageData) => {
+  try {
+    emit('saved', data)
+    showSaveDialog.value = false
+  } catch (error) {
+    console.error('Error handling page save:', error)
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.btn {
+  @apply px-4 py-2 rounded-lg transition-colors;
+
+  &-primary {
+    @apply bg-blue-500 text-white hover:bg-blue-600;
+  }
+
+  &-secondary {
+    @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
+  }
+}
+</style>

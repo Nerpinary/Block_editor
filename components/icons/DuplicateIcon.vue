@@ -5,15 +5,19 @@
   </BaseIcon>
 </template>
 
-<script>
+<script setup lang="ts">
 import BaseIcon from './BaseIcon.vue'
+import type { IconProps } from '@/types/icons'
 
+withDefaults(defineProps<IconProps>(), {
+  size: 5,
+  className: ''
+})
+</script>
+
+<script lang="ts">
+// Для поддержки имени компонента в DevTools
 export default {
-  name: 'DuplicateIcon',
-  components: { BaseIcon },
-  props: {
-    size: { type: Number, default: 5 },
-    className: { type: String, default: '' }
-  }
+  name: 'DuplicateIcon'
 }
 </script>

@@ -22,43 +22,43 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'PreviewColumnsBlock',
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { ColumnsBlockContent, ColumnContent } from '@/types/content'
+import type { ContentBlock } from '@/types/blocks'
 
-  props: {
-    content: {
-      type: [String, Object],
-      required: true
-    }
-  },
+interface Props {
+  content: ColumnsBlockContent | string
+}
 
-  methods: {
-    getPreviewComponent(type) {
-      return `Preview${type}Block`
-    }
-  },
+const props = defineProps<Props>()
 
-  computed: {
-    parsedContent() {
-      if (typeof this.content === 'string') {
-        try {
-          return JSON.parse(this.content)
-        } catch {
-          return { left: [], right: [] }
-        }
-      }
-      
-      // Преобразуем структуру columns в left/right для совместимости
-      if (this.content.columns) {
-        return {
-          left: this.content.columns[0] || [],
-          right: this.content.columns[1] || []
-        }
-      }
-      
-      return this.content
+const getPreviewComponent = (type: string): string => {
+  return `Preview${type}Block`
+}
+
+const parsedContent = computed<ColumnContent>(() => {
+  if (typeof props.content === 'string') {
+    try {
+      return JSON.parse(props.content)
+    } catch {
+      return { left: [], right: [] }
     }
   }
+  
+  if ('columns' in props.content) {
+    return {
+      left: props.content.columns[0] || [],
+      right: props.content.columns[1] || []
+    }
+  }
+  
+  return props.content as ColumnContent
+})
+</script>
+
+<script lang="ts">
+export default {
+  name: 'PreviewColumnsBlock'
 }
 </script>

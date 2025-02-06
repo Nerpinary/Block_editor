@@ -1,20 +1,37 @@
 <template>
-  <div class="drop-zone" :class="{
-    'drop-zone--active': isActive,
-    'drop-zone--drag-over': isDragOver,
-    'drop-zone--empty': !hasSlot,
-    [orientation]: true
-  }" @dragover.prevent="handleDragOver" @dragenter.prevent="handleDragEnter" @dragleave.prevent="handleDragLeave"
-    @drop.prevent="handleDrop">
+  <div 
+    class="drop-zone" 
+    :class="dropZoneClasses"
+    @dragover.prevent="handleDragOver" 
+    @dragenter.prevent="handleDragEnter" 
+    @dragleave.prevent="handleDragLeave"
+    @drop.prevent="handleDrop"
+  >
     <div class="drop-zone__content">
-      <div v-if="hasSlot" class="drop-zone__slot">
-        <slot></slot>
+      <div 
+        v-if="hasSlot" 
+        class="drop-zone__slot"
+      >
+        <slot />
       </div>
 
-      <div v-else class="drop-zone__placeholder">
+      <div 
+        v-else 
+        class="drop-zone__placeholder"
+      >
         <div class="drop-zone__icon">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          <svg 
+            class="w-6 h-6" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              stroke-width="2" 
+              d="M12 4v16m8-8H4" 
+            />
           </svg>
         </div>
         <div class="drop-zone__text">
@@ -25,194 +42,161 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'DropZone',
+<script setup lang="ts">
+import { ref, computed, useSlots } from 'vue'
+import type { DropData, DropEvent } from '@/types/drop'
 
-  props: {
-    zoneId: {
-      type: String,
-      required: true
-    },
-    placeholder: {
-      type: String,
-      default: 'Перетащите элемент сюда'
-    },
-    orientation: {
-      type: String,
-      default: 'vertical',
-      validator: value => ['vertical', 'horizontal'].includes(value)
-    },
-    active: {
-      type: Boolean,
-      default: true
-    },
-    allowedTypes: {
-      type: Array,
-      default: () => []
+type Orientation = 'vertical' | 'horizontal'
+
+interface Props {
+  zoneId: string
+  placeholder?: string
+  orientation?: Orientation
+  active?: boolean
+  allowedTypes?: string[]
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  placeholder: 'Перетащите элемент сюда',
+  orientation: 'vertical',
+  active: true,
+  allowedTypes: () => []
+})
+
+const emit = defineEmits<{
+  (e: 'dragenter', payload: { event: DragEvent; zoneId: string }): void
+  (e: 'dragleave', payload: { event: DragEvent; zoneId: string }): void
+  (e: 'drop', payload: DropEvent): void
+}>()
+
+const slots = useSlots()
+const isDragOver = ref(false)
+
+const hasSlot = computed(() => !!slots.default)
+
+const dropZoneClasses = computed(() => ({
+  'drop-zone--active': props.active,
+  'drop-zone--drag-over': isDragOver.value,
+  'drop-zone--empty': !hasSlot.value,
+  [props.orientation]: true
+}))
+
+const handleDragOver = (event: DragEvent) => {
+  if (!props.active) return
+  event.preventDefault()
+}
+
+const handleDragEnter = (event: DragEvent) => {
+  if (!props.active) return
+  isDragOver.value = true
+  emit('dragenter', { event, zoneId: props.zoneId })
+}
+
+const handleDragLeave = (event: DragEvent) => {
+  if (!props.active) return
+
+  const dropZone = event.currentTarget as HTMLElement
+  const relatedTarget = event.relatedTarget as HTMLElement
+
+  if (dropZone.contains(relatedTarget)) return
+
+  isDragOver.value = false
+  emit('dragleave', { event, zoneId: props.zoneId })
+}
+
+const handleDrop = (event: DragEvent) => {
+  if (!props.active || !event.dataTransfer) return
+  isDragOver.value = false
+
+  try {
+    const jsonData = event.dataTransfer.getData('application/json')
+    console.log('Received data:', jsonData)
+    
+    if (!jsonData) {
+      console.warn('No data received in drop event')
+      return
     }
-  },
 
-  data() {
-    return {
-      isDragOver: false
+    const data = JSON.parse(jsonData)
+    
+    if (props.allowedTypes.length && !props.allowedTypes.includes(data.type)) {
+      console.warn('This type is not allowed in this drop zone')
+      return
     }
-  },
-
-  computed: {
-    isActive() {
-      return this.active
-    },
-
-    hasSlot() {
-      return !!this.$slots.default
-    }
-  },
-
-  methods: {
-    handleDragOver(event) {
-      if (!this.isActive) return
-      event.preventDefault()
-    },
-
-    handleDragEnter(event) {
-      if (!this.isActive) return
-      this.isDragOver = true
-      this.$emit('dragenter', { event, zoneId: this.zoneId })
-    },
-
-    handleDragLeave(event) {
-      if (!this.isActive) return
-
-      const dropZone = event.currentTarget
-      const relatedTarget = event.relatedTarget
-
-      if (dropZone.contains(relatedTarget)) {
-        return
-      }
-
-      this.isDragOver = false
-      this.$emit('dragleave', { event, zoneId: this.zoneId })
-    },
-
-    handleDrop(event) {
-      if (!this.isActive) return
-      this.isDragOver = false
-
-      try {
-        const data = JSON.parse(event.dataTransfer.getData('application/json'))
-        if (this.allowedTypes.length && !this.allowedTypes.includes(data.type)) {
-          console.warn('This type is not allowed in this drop zone')
-          return
-        }
-        this.$emit('drop', {
-          data,
-          zoneId: this.zoneId,
-          event
-        })
-      } catch (error) {
-        console.error('Failed to parse drop data:', error)
-      }
-    }
+    
+    emit('drop', { data, zoneId: props.zoneId, event })
+  } catch (error) {
+    console.error('Failed to parse drop data:', error, 'Raw data:', event.dataTransfer.getData('application/json'))
   }
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .drop-zone {
-  position: relative;
-  transition: all 0.2s ease;
-  margin: 0.5rem 0;
-}
+  @apply relative transition-all duration-200 ease-in-out my-2;
 
-.drop-zone--active {
-  min-height: 100px;
-}
+  &--active {
+    min-height: 100px;
+  }
 
-.drop-zone.vertical {
-  width: 100%;
-}
+  &.vertical {
+    @apply w-full;
+  }
 
-.drop-zone.horizontal {
-  height: 100%;
-  width: 20px;
-}
+  &.horizontal {
+    @apply h-full w-20;
+  }
 
-.drop-zone__content {
-  height: 100%;
-  width: 100%;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border: 2px dashed #E5E7EB;
-  transition: all 0.2s ease;
-}
+  &__content {
+    @apply h-full w-full p-4 rounded-lg border-2 border-dashed border-gray-200 transition-all duration-200;
+  }
 
-.drop-zone--empty .drop-zone__content {
-  background-color: #F9FAFB;
-}
+  &--empty &__content {
+    @apply bg-gray-50;
+  }
 
-.drop-zone--active:hover .drop-zone__content {
-  border-color: #9CA3AF;
-  background-color: #F3F4F6;
-}
+  &--active:hover &__content {
+    @apply border-gray-400 bg-gray-100;
+  }
 
-.drop-zone--drag-over .drop-zone__content {
-  background-color: rgba(79, 70, 229, 0.1);
-  border-color: #4F46E5;
-  border-style: dashed;
-  transform: scale(1.02);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
+  &--drag-over &__content {
+    @apply bg-indigo-50 border-indigo-500;
+    transform: scale(1.02);
+    @apply shadow-lg;
+  }
 
-.drop-zone__placeholder {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #6B7280;
-  padding: 1.5rem;
-}
+  &__placeholder {
+    @apply h-full flex flex-col items-center justify-center text-gray-500 p-6;
+  }
 
-.drop-zone__icon {
-  margin-bottom: 0.75rem;
-  transition: transform 0.2s ease;
-}
+  &__icon {
+    @apply mb-3 transition-transform duration-200;
+  }
 
-.drop-zone--drag-over .drop-zone__icon {
-  transform: scale(1.1);
-}
+  &--drag-over &__icon {
+    transform: scale(1.1);
+  }
 
-.drop-zone__text {
-  font-size: 0.875rem;
-  text-align: center;
-  transition: color 0.2s ease;
-}
+  &__text {
+    @apply text-sm text-center transition-colors duration-200;
+  }
 
-.drop-zone--drag-over .drop-zone__text {
-  color: #4F46E5;
-}
+  &--drag-over &__text {
+    @apply text-indigo-500;
+  }
 
-.drop-zone__slot {
-  height: 100%;
+  &__slot {
+    @apply h-full;
+  }
+
+  &--drag-over {
+    animation: pulse 2s infinite;
+  }
 }
 
 @keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.02);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-
-.drop-zone--drag-over {
-  animation: pulse 2s infinite;
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 </style>

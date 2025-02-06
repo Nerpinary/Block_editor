@@ -1,10 +1,10 @@
 <template>
   <div class="image-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
-    @dragstart="onDragStart($event)" @dragend="onDragEnd">
+    @dragstart="onDragStart" @dragend="onDragEnd">
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="$emit('duplicate')" />
+      @duplicate="emit('duplicate')" />
 
-    <DeleteBlockButton @delete="$emit('remove')" />
+    <DeleteBlockButton @delete="emit('remove')" />
 
     <div class="block-content">
       <div class="block-header flex items-center mb-2">
@@ -29,195 +29,160 @@
         </div>
       </div>
 
-      <input v-if="imageContent.url" 
-        :value="imageContent.caption"
-        class="mt-2 w-full border-none bg-transparent"
-        placeholder="Подпись к изображению..." 
-        @input="updateCaption($event.target.value)">
+      <input v-if="imageContent.url" :value="imageContent.caption" class="mt-2 w-full border-none bg-transparent"
+        placeholder="Подпись к изображению..." @input="updateCaption">
     </div>
   </div>
 </template>
 
-<script>
-import dragdrop from '@/mixins/dragdrop'
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useEditorStore } from '@/stores/editor'
+import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import type { ImageContent } from '@/types/content'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import BlockControls from '@/components/shared/BlockControls.vue'
+import type { BlockData } from '@/types/blocks'
 
-export default {
-  name: 'ImageBlock',
+interface Props {
+  content: string | ImageContent
+  index: number
+  isLast: boolean
+  parentId: string
+  isInsideColumn: boolean
+}
 
-  components: {
-    DeleteBlockButton,
-    BlockControls
-  },
+const props = withDefaults(defineProps<Props>(), {
+  content: () => ({
+    url: '',
+    caption: ''
+  }),
+  parentId: 'main-editor',
+  isLast: false,
+  isInsideColumn: false
+})
 
-  mixins: [dragdrop],
+const emit = defineEmits<{
+  'update:content': [content: ImageContent]
+  'remove': []
+  'duplicate': []
+  'error': [message: string]
+}>()
 
-  props: {
-    content: {
-      type: [String, Object],
-      default: () => ({
-        url: '',
-        caption: ''
-      })
-    },
-    index: {
-      type: Number,
-      required: true
-    },
-    isLast: {
-      type: Boolean,
-      default: false
-    },
-    parentId: {
-      type: String,
-      default: 'main-editor'
-    },
-    isInsideColumn: {
-      type: Boolean,
-      default: false
+const store = useEditorStore()
+const fileInput = ref<HTMLInputElement | null>(null)
+const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
+
+const imageContent = computed<ImageContent>(() => {
+  if (typeof props.content === 'string') {
+    try {
+      return JSON.parse(props.content)
+    } catch {
+      return { url: '', caption: '' }
     }
-  },
+  }
+  return props.content || { url: '', caption: '' }
+})
 
-  data() {
-    return {
-      dragState: {
-        isDragging: false
+const handleMove = (direction: 'up' | 'down') => {
+  const fromIndex = props.index
+  const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
+  store.moveBlock(fromIndex, toIndex)
+}
+
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const handleFileChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+
+  if (file && file.type.startsWith('image/')) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const newContent: ImageContent = {
+        url: e.target?.result as string,
+        caption: imageContent.value.caption || ''
       }
+
+      emit('update:content', newContent)
+
+      if (input) input.value = ''
     }
-  },
-
-  computed: {
-    imageContent() {
-      if (typeof this.content === 'string') {
-        try {
-          return JSON.parse(this.content)
-        } catch {
-          return { url: '', caption: '' }
-        }
-      }
-      return this.content || { url: '', caption: '' }
+    reader.onerror = () => {
+      console.error('Error reading file:', file)
+      emit('error', 'Ошибка при загрузке изображения')
     }
-  },
+    reader.readAsDataURL(file)
+  } else {
+    emit('error', 'Пожалуйста, загрузите изображение')
+  }
+}
 
-  methods: {
-    handleMove(direction) {
-      const fromIndex = this.index
-      const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
-      this.$store.commit('MOVE_BLOCK', { fromIndex, toIndex })
-    },
+const updateCaption = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const updatedContent: ImageContent = {
+    url: imageContent.value.url,
+    caption: input.value
+  }
+  emit('update:content', updatedContent)
+}
 
-    removeBlock() {
-      this.$emit('remove-original-block', {
-        parentId: this.parentId,
-        index: this.index
-      })
-    },
+const onDragStart = (event: DragEvent) => {
+  if (!event.dataTransfer) return
 
-    triggerFileInput() {
-      this.$refs.fileInput.click()
-    },
-
-    handleFileChange(event) {
-      const file = event.target.files[0];
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const newContent = {
-            url: e.target.result,
-            caption: this.imageContent.caption || ''
-          };
-          
-          this.$emit('update:content', newContent);
-          
-          this.$refs.fileInput.value = '';
-        };
-        reader.onerror = () => {
-          console.error('Error reading file:', file);
-          this.$emit('error', 'Ошибка при загрузке изображения');
-        };
-        reader.readAsDataURL(file);
-      } else {
-        this.$emit('error', 'Пожалуйста, загрузите изображение');
-      }
-    },
-
-    updateCaption(caption) {
-      const updatedContent = {
-        url: this.imageContent.url,
-        caption: caption
-      };
-      this.$emit('update:content', updatedContent);
-    },
-
-    onDragStart(event) {
-      const blockData = {
-        type: 'Image',
-        index: this.index,
-        parentId: this.parentId,
-        source: 'editor',
-        content: this.imageContent,
-        originalBlock: {
-          type: 'Image',
-          content: this.imageContent
-        }
-      }
-      event.dataTransfer.setData('application/json', JSON.stringify(blockData))
+  const blockData: BlockData = {
+    type: 'Image',
+    index: props.index,
+    originalIndex: props.index,
+    parentId: props.parentId,
+    source: 'editor',
+    content: imageContent.value,
+    originalBlock: {
+      type: 'Image',
+      content: imageContent.value
     }
+  }
+
+  try {
+    const jsonData = JSON.stringify(blockData)
+    event.dataTransfer.setData('application/json', jsonData)
+    startDrag(event, blockData)
+  } catch (error) {
+    console.error('Error setting drag data:', error)
   }
 }
 </script>
 
-<style scoped>
-
-.heading-block, .text-block, .image-block {
-  position: relative;
-  background: white;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-:deep(.block-controls-wrapper) {
-  z-index: 1000 !important;
-}
-
+<style lang="scss" scoped>
 .image-block {
-  background: white;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
+  @apply relative bg-white rounded-lg p-4 shadow-sm;
 
-.image-block:not(.is-inside-column) :deep(.block-controls) {
-  opacity: 0;
-  transform: translateX(10px);
-  transition: all 0.2s ease-in-out;
-}
+  &:not(.is-inside-column) {
+    :deep(.block-controls) {
+      @apply opacity-0 translate-x-2.5 transition-all duration-200;
+    }
 
-.image-block:not(.is-inside-column):hover :deep(.block-controls) {
-  opacity: 1;
-  transform: translateX(0);
-}
+    &:hover :deep(.block-controls) {
+      @apply opacity-100 translate-x-0;
+    }
+  }
 
-.image-block :deep(.delete-button) {
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-}
+  :deep(.delete-button) {
+    @apply opacity-0 transition-opacity duration-200;
+  }
 
-.image-block:hover :deep(.delete-button) {
-  opacity: 1;
+  &:hover :deep(.delete-button) {
+    @apply opacity-100;
+  }
 }
 
 .upload-placeholder {
-  cursor: pointer;
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  @apply cursor-pointer min-h-[200px] flex items-center justify-center;
 
-.upload-placeholder:hover {
-  @apply bg-gray-50;
+  &:hover {
+    @apply bg-gray-50;
+  }
 }
 </style>

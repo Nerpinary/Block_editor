@@ -1,16 +1,18 @@
 <template>
   <div class="preview-page min-h-screen bg-white">
-    <div class="h-14 border-b bg-white px-4 flex items-center justify-between sticky top-0 z-10">
-      <h1 class="text-lg font-medium text-gray-900">Предпросмотр</h1>
+    <header class="preview-header">
+      <h1 class="text-lg font-medium text-gray-900">
+        Предпросмотр
+      </h1>
       <button
         @click="goBack"
-        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        class="preview-button"
       >
         Вернуться к редактированию
       </button>
-    </div>
+    </header>
 
-    <div class="max-w-4xl mx-auto p-8">
+    <main class="max-w-4xl mx-auto p-8">
       <div 
         v-for="block in blocks" 
         :key="block.id"
@@ -21,11 +23,14 @@
           :content="block.content"
         />
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useEditorStore } from '@/stores/editor'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import {
   PreviewTextBlock,
   PreviewHeadingBlock,
@@ -36,46 +41,82 @@ import {
   PreviewListBlock,
   PreviewTableBlock
 } from '@/components/preview'
+import type { Block } from '@/types'
 
-export default {
-  name: 'PreviewPage',
+const store = useEditorStore()
+const route = useRoute()
+const router = useRouter()
 
-  components: {
-    PreviewTextBlock,
-    PreviewHeadingBlock,
-    PreviewImageBlock,
-    PreviewColumnsBlock,
-    PreviewSpecificationsBlock,
-    PreviewProsConsBlock,
-    PreviewListBlock,
-    PreviewTableBlock
-  },
+const blocks = computed<Block[]>(() => store.blocks)
 
-  computed: {
-    blocks() {
-      return this.$store.state.blocks
-    }
-  },
+const previewComponents = {
+  PreviewTextBlock,
+  PreviewHeadingBlock,
+  PreviewImageBlock,
+  PreviewColumnsBlock,
+  PreviewSpecificationsBlock,
+  PreviewProsConsBlock,
+  PreviewListBlock,
+  PreviewTableBlock
+}
 
-  methods: {
-    getPreviewComponent(type) {
-      return `Preview${type}Block`
-    },
+const getPreviewComponent = (type: string): string => {
+  const componentName = `Preview${type}Block`
+  if (componentName in previewComponents) {
+    return componentName
+  }
+  console.warn(`Preview component not found for type: ${type}`)
+  return 'div'
+}
 
-    goBack() {
-      if (this.$route.params.slug) {
-        this.$router.push('/saved-pages')
-      } else {
-        this.$router.push('/?from=preview')
-      }
-    }
-  },
-
-  beforeRouteLeave(to, from, next) {
-    if (to.path === '/') {
-      localStorage.setItem('temp_blocks', JSON.stringify(this.blocks))
-    }
-    next()
+const goBack = () => {
+  if (route.params.slug) {
+    router.push('/saved-pages')
+  } else {
+    router.push('/?from=preview')
   }
 }
+
+onMounted(() => {
+  // Проверяем, пришли ли мы с редактора
+  const fromEditor = !route.params.slug && !route.query.from
+  if (fromEditor) {
+    // Сохраняем текущие блоки перед предпросмотром
+    localStorage.setItem('temp_blocks', JSON.stringify(blocks.value))
+  }
+})
+
+onBeforeRouteLeave((to) => {
+  if (to.path === '/') {
+    localStorage.setItem('temp_blocks', JSON.stringify(blocks.value))
+  }
+})
 </script>
+
+<script lang="ts">
+// Для поддержки имени компонента в DevTools
+export default {
+  name: 'PreviewPage'
+}
+</script>
+
+<style lang="scss" scoped>
+.preview {
+  &-page {
+    @apply min-h-screen bg-white;
+  }
+
+  &-header {
+    @apply h-14 border-b bg-white px-4;
+    @apply flex items-center justify-between;
+    @apply sticky top-0 z-10;
+  }
+
+  &-button {
+    @apply px-4 py-2 rounded-lg;
+    @apply bg-blue-500 text-white;
+    @apply hover:bg-blue-600;
+    @apply transition-colors duration-200;
+  }
+}
+</style>

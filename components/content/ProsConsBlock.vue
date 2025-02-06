@@ -1,10 +1,10 @@
 <template>
   <div class="pros-cons-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
-    @dragstart="onDragStart($event)" @dragend="onDragEnd">
+    @dragstart="onDragStart" @dragend="onDragEnd">
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="$emit('duplicate')" />
+      @duplicate="emit('duplicate')" />
 
-    <DeleteBlockButton @delete="$emit('remove')" />
+    <DeleteBlockButton @delete="emit('remove')" />
 
     <div class="block-content">
       <div class="block-header flex items-center justify-between mb-4">
@@ -44,102 +44,126 @@
   </div>
 </template>
 
-<script>
-import dragdrop from '@/mixins/dragdrop'
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue'
+import { useEditorStore } from '@/stores/editor'
+import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import type { ProsConsContent } from '@/types/content'
+import type { BlockData } from '@/types/blocks'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import BlockControls from '@/components/shared/BlockControls.vue'
 import ThumbUpIcon from '@/components/icons/ThumbUpIcon.vue'
 import ThumbDownIcon from '@/components/icons/ThumbDownIcon.vue'
 
-export default {
-  name: 'ProsConsBlock',
+interface Props {
+  content: string | ProsConsContent
+  index: number
+  isLast: boolean
+  parentId: string
+  isInsideColumn: boolean
+}
 
-  components: {
-    DeleteBlockButton,
-    BlockControls,
-    ThumbUpIcon,
-    ThumbDownIcon
-  },
+const props = withDefaults(defineProps<Props>(), {
+  content: () => ({
+    pros: '',
+    cons: ''
+  }),
+  parentId: 'main-editor',
+  isLast: false,
+  isInsideColumn: false
+})
 
-  mixins: [dragdrop],
+const emit = defineEmits<{
+  'update:content': [content: ProsConsContent]
+  'remove': []
+  'duplicate': []
+  'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
+}>()
 
-  props: {
-    content: {
-      type: [String, Object],
-      default: () => ({
-        pros: '',
-        cons: ''
-      })
-    },
-    index: {
-      type: Number,
-      required: true
-    },
-    isLast: {
-      type: Boolean,
-      default: false
-    },
-    parentId: {
-      type: String,
-      default: null
-    },
-    isInsideColumn: {
-      type: Boolean,
-      default: false
-    }
-  },
+const store = useEditorStore()
+const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
 
-  data() {
-    return {
-      localContent: {
-        pros: '',
-        cons: ''
-      },
-      dragState: {
-        isDragging: false
-      }
-    }
-  },
+const localContent = ref<ProsConsContent>({
+  pros: '',
+  cons: ''
+})
 
-  mounted() {
-    this.localContent = {
-      pros: this.content.pros || '',
-      cons: this.content.cons || ''
-    }
-  },
+const updateContent = () => {
+  emit('update:content', { ...localContent.value })
+}
 
-  methods: {
-    updateContent() {
-      this.$emit('update:content', { ...this.localContent })
-    },
+const handleMove = (direction: 'up' | 'down') => {
+  emit('move', {
+    direction,
+    index: props.index,
+    parentId: props.parentId
+  })
+}
 
-    handleMove(direction) {
-      this.$emit('move', {
-        direction,
-        index: this.index,
-        parentId: this.parentId
-      })
-    }
-  },
-
-  watch: {
-    content: {
-      handler(newContent) {
-        if (JSON.stringify(newContent) !== JSON.stringify(this.localContent)) {
-          this.localContent = {
-            pros: newContent.pros || '',
-            cons: newContent.cons || ''
-          }
-        }
-      },
-      deep: true
+const onDragStart = (event: DragEvent) => {
+  if (!event.dataTransfer) return
+  
+  const blockData: BlockData = {
+    type: 'ProsCons',
+    index: props.index,
+    originalIndex: props.index,
+    parentId: props.parentId,
+    source: 'editor',
+    content: localContent.value,
+    originalBlock: {
+      type: 'ProsCons',
+      content: localContent.value
     }
   }
+
+  try {
+    const jsonData = JSON.stringify(blockData)
+    event.dataTransfer.setData('application/json', jsonData)
+    startDrag(event, blockData)
+  } catch (error) {
+    console.error('Error setting drag data:', error)
+  }
 }
+
+onMounted(() => {
+  const content = typeof props.content === 'string' 
+    ? JSON.parse(props.content) 
+    : props.content
+    
+  localContent.value = {
+    pros: content.pros || '',
+    cons: content.cons || ''
+  }
+})
+
+watch(() => props.content, (newContent) => {
+  const content = typeof newContent === 'string' 
+    ? JSON.parse(newContent) 
+    : newContent
+    
+  if (JSON.stringify(content) !== JSON.stringify(localContent.value)) {
+    localContent.value = {
+      pros: content.pros || '',
+      cons: content.cons || ''
+    }
+  }
+}, { deep: true })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .pros-cons-block {
   @apply bg-white rounded-lg shadow-sm p-4;
+
+  :deep(.block-controls),
+  :deep(.delete-button) {
+    @apply opacity-0 transition-opacity duration-200;
+  }
+
+  &:hover {
+    :deep(.block-controls),
+    :deep(.delete-button) {
+      @apply opacity-100;
+    }
+  }
 }
 </style> 

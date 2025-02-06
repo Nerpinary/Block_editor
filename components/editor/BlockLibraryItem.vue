@@ -1,5 +1,10 @@
 <template>
-  <div class="block-library-item" draggable="true" @dragstart="$emit('dragstart')" @click="$emit('click', type)">
+  <div 
+    class="block-library-item" 
+    draggable="true" 
+    @dragstart="emit('dragstart', $event)" 
+    @click="emit('click', type)"
+  >
     <div class="block-content">
       <component :is="icon" class="icon" />
       <span class="name">{{ name }}</span>
@@ -7,51 +12,42 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'BlockLibraryItem',
-  
-  props: {
-    type: {
-      type: String,
-      required: true
-    },
-    icon: {
-      type: [String, Object],
-      required: true
-    },
-    name: {
-      type: String,
-      required: true
-    }
-  }
+<script setup lang="ts">
+import type { BlockType } from '@/types/blocks'
+import type { Component } from 'vue'
+
+interface Props {
+  type: BlockType
+  icon: string | Component
+  name: string
 }
+
+defineProps<Props>()
+
+const emit = defineEmits<{
+  dragstart: [event: DragEvent]
+  click: [type: BlockType]
+}>()
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .block-library-item {
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  transition: background-color 0.2s;
-}
+  @apply cursor-pointer p-2 rounded-md transition-colors duration-200;
 
-.block-library-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
+  &:hover {
+    @apply bg-gray-50;
+  }
 
-.block-content {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+  .block-content {
+    @apply flex items-center gap-2;
 
-.icon {
-  color: #6B7280;
-}
+    .icon {
+      @apply text-gray-500;
+    }
 
-.name {
-  font-size: 0.875rem;
-  color: #374151;
+    .name {
+      @apply text-sm text-gray-700;
+    }
+  }
 }
 </style>

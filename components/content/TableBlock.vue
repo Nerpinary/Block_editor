@@ -1,9 +1,9 @@
 <template>
   <div class="table-block border rounded p-4 relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
-    @dragstart="onDragStart($event)" @dragend="onDragEnd">
-    <DeleteBlockButton @delete="$emit('remove')" />
+    @dragstart="onDragStart" @dragend="onDragEnd">
+    <DeleteBlockButton @delete="emit('remove')" />
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="$emit('duplicate')" />
+      @duplicate="emit('duplicate')" />
 
     <div class="block-content">
       <div class="block-header flex items-center justify-between mb-4">
@@ -17,7 +17,7 @@
             <PlusIcon :size="5" />
           </button>
           <button 
-            v-if="localData[0].length > 2"
+            v-if="localData && localData[0] && localData[0].length > 2"
             @click="removeColumn"
             class="p-1 text-red-500 hover:text-red-600 transition-colors"
             title="Удалить столбец"
@@ -67,153 +67,156 @@
   </div>
 </template>
 
-<script>
-import dragdrop from '@/mixins/dragdrop'
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue'
+import { useEditorStore } from '@/stores/editor'
+import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import type { TableContent } from '@/types/content'
+import type { BlockData } from '@/types/blocks'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import BlockControls from '@/components/shared/BlockControls.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
 import MinusIcon from '@/components/icons/MinusIcon.vue'
 
-export default {
-  name: 'TableBlock',
+interface Props {
+  content: string | TableContent
+  index: number
+  isLast: boolean
+  parentId: string
+  isInsideColumn: boolean
+}
 
-  components: {
-    DeleteBlockButton,
-    BlockControls,
-    PlusIcon,
-    MinusIcon
-  },
+const props = withDefaults(defineProps<Props>(), {
+  content: () => ({
+    data: [
+      ['', ''],
+      ['', '']
+    ]
+  }),
+  parentId: 'main-editor',
+  isLast: false,
+  isInsideColumn: false
+})
 
-  mixins: [dragdrop],
+const emit = defineEmits<{
+  'update:content': [content: TableContent]
+  'remove': []
+  'duplicate': []
+  'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
+}>()
 
-  props: {
-    content: {
-      type: [Object, String],
-      default: () => ({
-        data: [
-          ['', ''],
-          ['', '']
-        ]
-      })
-    },
-    index: {
-      type: Number,
-      required: true
-    },
-    isLast: {
-      type: Boolean,
-      default: false
-    },
-    parentId: {
-      type: String,
-      default: null
-    },
-    isInsideColumn: {
-      type: Boolean,
-      default: false
+const store = useEditorStore()
+const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
+
+const localData = ref<string[][]>([['', ''], ['', '']])
+
+const updateContent = () => {
+  emit('update:content', {
+    data: localData.value.map(row => [...row])
+  })
+}
+
+const addRow = () => {
+  const newRow = new Array(localData.value[0].length).fill('')
+  localData.value = [...localData.value, newRow]
+  updateContent()
+}
+
+const removeRow = () => {
+  if (localData.value.length > 2) {
+    localData.value = localData.value.slice(0, -1)
+    updateContent()
+  }
+}
+
+const addColumn = () => {
+  localData.value = localData.value.map(row => [...row, ''])
+  updateContent()
+}
+
+const removeColumn = () => {
+  if (localData.value[0].length > 2) {
+    localData.value = localData.value.map(row => row.slice(0, -1))
+    updateContent()
+  }
+}
+
+const handleMove = (direction: 'up' | 'down') => {
+  emit('move', {
+    direction,
+    index: props.index,
+    parentId: props.parentId
+  })
+}
+
+const onDragStart = (event: DragEvent) => {
+  if (!event.dataTransfer) return
+  
+  const blockData: BlockData = {
+    type: 'Table',
+    index: props.index,
+    originalIndex: props.index,
+    parentId: props.parentId,
+    source: 'editor',
+    content: { data: localData.value.map(row => [...row]) },
+    originalBlock: {
+      type: 'Table',
+      content: { data: localData.value.map(row => [...row]) }
     }
-  },
+  }
 
-  data() {
-    return {
-      localData: [],
-      dragState: {
-        isDragging: false
-      }
-    }
-  },
+  try {
+    const jsonData = JSON.stringify(blockData)
+    event.dataTransfer.setData('application/json', jsonData)
+    startDrag(event, blockData)
+  } catch (error) {
+    console.error('Error setting drag data:', error)
+  }
+}
 
-  created() {
-    const initialContent = typeof this.content === 'string' ? { data: [['', ''], ['', '']] } : this.content
-    this.localData = JSON.parse(JSON.stringify(initialContent.data || [['', ''], ['', '']]))
-  },
+onMounted(() => {
+  initializeData()
+})
 
-  methods: {
-    updateContent() {
-      const newData = this.localData.map(row => [...row])
-      this.$emit('update:content', {
-        data: newData
-      })
-    },
+const initializeData = () => {
+  const initialContent = typeof props.content === 'string' 
+    ? JSON.parse(props.content) as TableContent
+    : props.content
+    
+  localData.value = JSON.parse(JSON.stringify(initialContent.data || [['', ''], ['', '']]))
+}
 
-    addRow() {
-      const newRow = new Array(this.localData[0].length).fill('')
-      const newData = [...this.localData, newRow]
-      this.localData = newData
-      this.updateContent()
-    },
+watch(() => props.content, () => {
+  initializeData()
+}, { deep: true })
+</script>
 
-    removeRow() {
-      if (this.localData.length > 2) {
-        const newData = this.localData.slice(0, -1)
-        this.localData = newData
-        this.updateContent()
-      }
-    },
+<style lang="scss" scoped>
+.table-block {
+  @apply bg-white rounded-xl shadow-sm;
 
-    addColumn() {
-      const newData = this.localData.map(row => [...row, ''])
-      this.localData = newData
-      this.updateContent()
-    },
+  :deep(.block-controls),
+  :deep(.delete-button) {
+    @apply opacity-0 transition-opacity duration-200;
+  }
 
-    removeColumn() {
-      if (this.localData[0].length > 2) {
-        const newData = this.localData.map(row => row.slice(0, -1))
-        this.localData = newData
-        this.updateContent()
-      }
-    },
-
-    handleMove(direction) {
-      this.$emit('move', {
-        direction,
-        index: this.index,
-        parentId: this.parentId
-      })
-    }
-  },
-
-  watch: {
-    'content.data': {
-      handler(newData) {
-        if (newData && JSON.stringify(newData) !== JSON.stringify(this.localData)) {
-          this.localData = JSON.parse(JSON.stringify(newData))
-        }
-      },
-      deep: true
+  &:hover {
+    :deep(.block-controls),
+    :deep(.delete-button) {
+      @apply opacity-100;
     }
   }
 }
-</script>
-
-<style scoped>
-.table-block {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.table-block :deep(.block-controls),
-.table-block :deep(.delete-button) {
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.table-block:hover :deep(.block-controls),
-.table-block:hover :deep(.delete-button) {
-  opacity: 1;
-}
 
 .table-responsive {
-  overflow-x: auto;
-}
+  @apply overflow-x-auto;
 
-table {
-  border: 1px solid #e2e8f0;
-}
+  table {
+    @apply border border-gray-200;
+  }
 
-td {
-  border-color: #e2e8f0;
+  td {
+    @apply border-gray-200;
+  }
 }
 </style> 

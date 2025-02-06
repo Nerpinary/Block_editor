@@ -13,14 +13,18 @@
   </svg>
 </template>
 
-<script>
+<script setup lang="ts">
+interface Props {
+  size?: number
+}
+
+withDefaults(defineProps<Props>(), {
+  size: 6
+})
+</script>
+
+<script lang="ts">
 export default {
-  name: 'MinusIcon',
-  props: {
-    size: {
-      type: Number,
-      default: 6
-    }
-  }
+  name: 'MinusIcon'
 }
 </script> 

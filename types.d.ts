@@ -1,0 +1,9 @@
+declare module '@/types' {
+  export interface PageData {
+    // ...
+  }
+  export interface EditorAction {
+    // ...
+  }
+  // другие типы...
+} 

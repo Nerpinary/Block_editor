@@ -1,26 +1,32 @@
 <template>
   <button
-    class="delete-button absolute top-2 right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-    @click="$emit('delete')">
+    class="delete-button"
+    @click="emit('delete')"
+  >
     <DeleteIcon :size="4" />
   </button>
 </template>
 
-<script>
+<script setup lang="ts">
 import { DeleteIcon } from '@/components/icons'
 
-export default {
-  name: 'DeleteBlockButton',
+const emit = defineEmits<{
+  (e: 'delete'): void
+}>()
+</script>
 
-  components: {
-    DeleteIcon
-  }
+<script lang="ts">
+export default {
+  name: 'DeleteBlockButton'
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .delete-button {
+  @apply absolute top-2 right-2 p-1 rounded-full;
+  @apply bg-red-500 text-white;
+  @apply opacity-0 group-hover:opacity-100 transition-opacity;
+  @apply shadow-sm;
   transform: translate(50%, -50%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 </style>

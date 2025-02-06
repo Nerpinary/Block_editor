@@ -34,7 +34,10 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref } from 'vue'
+import type { DirectiveBinding } from 'vue'
+import { useEditorStore } from '@/stores/editor'
 import {
   DotsVerticalIcon,
   ChevronUpIcon,
@@ -43,74 +46,64 @@ import {
   DeleteIcon
 } from '@/components/icons'
 
-export default {
-  name: 'BlockMenu',
+interface CustomHTMLElement extends HTMLElement {
+  clickOutsideEvent?: (event: Event) => void
+}
 
-  components: {
-    DotsVerticalIcon,
-    ChevronUpIcon,
-    ChevronDownIcon,
-    DuplicateIcon,
-    DeleteIcon
-  },
+type MoveDirection = 'up' | 'down'
 
-  props: {
-    index: {
-      type: Number,
-      required: true
-    },
-    isFirst: {
-      type: Boolean,
-      default: false
-    },
-    isLast: {
-      type: Boolean,
-      default: false
-    }
-  },
+interface Props {
+  index: number
+  isFirst?: boolean
+  isLast?: boolean
+}
 
-  data() {
-    return {
-      isOpen: false
-    }
-  },
+const props = withDefaults(defineProps<Props>(), {
+  isFirst: false,
+  isLast: false
+})
 
-  methods: {
-    closeMenu() {
-      this.isOpen = false
-    },
+const emit = defineEmits<{
+  (e: 'duplicate'): void
+  (e: 'remove'): void
+}>()
 
-    moveBlock(direction) {
-      const fromIndex = this.index
-      const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
-      this.$store.commit('MOVE_BLOCK', { fromIndex, toIndex })
-      this.closeMenu()
-    },
+const store = useEditorStore()
+const isOpen = ref(false)
 
-    duplicateBlock() {
-      this.$emit('duplicate')
-      this.closeMenu()
-    },
+const closeMenu = () => {
+  isOpen.value = false
+}
 
-    removeBlock() {
-      this.$emit('remove')
-      this.closeMenu()
-    }
-  },
+const moveBlock = (direction: MoveDirection) => {
+  const fromIndex = props.index
+  const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
+  store.moveBlock(fromIndex, toIndex)
+  closeMenu()
+}
 
-  directives: {
-    clickOutside: {
-      mounted(el, binding) {
-        el.clickOutsideEvent = function (event) {
-          if (!(el === event.target || el.contains(event.target))) {
-            binding.value(event)
-          }
-        }
-        document.addEventListener('click', el.clickOutsideEvent)
-      },
-      unmounted(el) {
-        document.removeEventListener('click', el.clickOutsideEvent)
+const duplicateBlock = () => {
+  emit('duplicate')
+  closeMenu()
+}
+
+const removeBlock = () => {
+  emit('remove')
+  closeMenu()
+}
+
+const vClickOutside = {
+  mounted(el: CustomHTMLElement, binding: DirectiveBinding) {
+    el.clickOutsideEvent = (event: Event) => {
+      if (!(el === event.target || el.contains(event.target as Node))) {
+        binding.value(event)
       }
+    }
+    document.addEventListener('click', el.clickOutsideEvent)
+  },
+  unmounted(el: CustomHTMLElement) {
+    if (el.clickOutsideEvent) {
+      document.removeEventListener('click', el.clickOutsideEvent)
     }
   }
 }

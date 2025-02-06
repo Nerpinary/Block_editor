@@ -5,19 +5,20 @@
   </svg>
 </template>
 
-<script>
-export default {
-  name: 'BaseIcon',
+<script setup lang="ts">
+interface Props {
+  size?: number
+  className?: string
+}
 
-  props: {
-    size: {
-      type: Number,
-      default: 5
-    },
-    className: {
-      type: String,
-      default: ''
-    }
-  }
+withDefaults(defineProps<Props>(), {
+  size: 5,
+  className: ''
+})
+</script>
+
+<script lang="ts">
+export default {
+  name: 'BaseIcon'
 }
 </script>

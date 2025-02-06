@@ -9,28 +9,32 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'PreviewTextBlock',
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { TextContent } from '@/types/content'
 
-  props: {
-    content: {
-      type: [String, Object],
-      default: ''
-    }
-  },
+interface Props {
+  content: TextContent | string
+}
 
-  computed: {
-    textContent() {
-      if (typeof this.content === 'string') {
-        return {
-          text: this.content,
-          alignment: 'left',
-          color: 'inherit'
-        }
-      }
-      return this.content
+const props = withDefaults(defineProps<Props>(), {
+  content: ''
+})
+
+const textContent = computed<TextContent>(() => {
+  if (typeof props.content === 'string') {
+    return {
+      text: props.content,
+      alignment: 'left',
+      color: 'inherit'
     }
   }
+  return props.content
+})
+</script>
+
+<script lang="ts">
+export default {
+  name: 'PreviewTextBlock'
 }
 </script>

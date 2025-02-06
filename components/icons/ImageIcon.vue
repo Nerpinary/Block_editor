@@ -1,19 +1,33 @@
 <template>
-  <BaseIcon :size="size" :class-name="className">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-  </BaseIcon>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    :width="size * 4"
+    :height="size * 4"
+    :class="className"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+    <polyline points="21 15 16 10 5 21" />
+  </svg>
 </template>
 
-<script>
-import BaseIcon from './BaseIcon.vue'
+<script setup lang="ts">
+import type { IconProps } from '@/types/icons'
 
+withDefaults(defineProps<IconProps>(), {
+  size: 5,
+  className: ''
+})
+</script>
+
+<script lang="ts">
 export default {
-  name: 'ImageIcon',
-  components: { BaseIcon },
-  props: {
-    size: { type: Number, default: 5 },
-    className: { type: String, default: '' }
-  }
+  name: 'ImageIcon'
 }
 </script>

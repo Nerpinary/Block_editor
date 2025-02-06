@@ -2,22 +2,29 @@
   <div class="heading-level-selector">
     <button 
       class="selector-button"
-      @click="isOpen = !isOpen"
-      :title="'Уровень ' + currentLevel">
-      h{{ currentLevel }}
+      @click.stop="toggleDropdown"
+      :title="`Уровень ${modelValue}`"
+    >
+      h{{ modelValue }}
     </button>
     
-    <div v-if="isOpen" 
+    <div 
+      v-if="isOpen" 
       class="selector-dropdown"
-      v-click-outside="close">
+      v-click-outside="close"
+    >
       <button 
-        v-for="level in 6" 
+        v-for="level in headingLevels" 
         :key="level"
         class="level-option"
-        :class="{ 'active': level === currentLevel }"
-        @click="selectLevel(level)">
+        :class="{ 'active': level === modelValue }"
+        @click.stop="selectLevel(level as HeadingLevel)"
+      >
         <span class="level-label">h{{ level }}</span>
-        <span class="level-preview" :style="{ fontSize: previewSize(level) }">
+        <span 
+          class="level-preview" 
+          :style="{ fontSize: previewSize(level as HeadingLevel) }"
+        >
           Заголовок
         </span>
       </button>
@@ -25,60 +32,57 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'HeadingLevelSelector',
-  
-  props: {
-    value: {
-      type: Number,
-      default: 1
-    }
-  },
-  
-  data() {
-    return {
-      isOpen: false,
-      currentLevel: this.value
-    }
-  },
-  
-  methods: {
-    close() {
-      this.isOpen = false
-    },
-    
-    selectLevel(level) {
-      this.currentLevel = level
-      this.$emit('input', level)
-      this.close()
-    },
-    
-    previewSize(level) {
-      const sizes = {
-        1: '1.5em',
-        2: '1.3em',
-        3: '1.17em',
-        4: '1em',
-        5: '0.83em',
-        6: '0.67em'
-      }
-      return sizes[level]
-    }
-  },
-  
-  watch: {
-    value(newValue) {
-      this.currentLevel = newValue
-    }
-  }
+<script setup lang="ts">
+import { ref } from 'vue'
+import { vClickOutside } from '@/directives/clickOutside'
+import type { HeadingLevel } from '@/types/content'
+
+interface Props {
+  modelValue: HeadingLevel
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  modelValue: 1
+})
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', level: HeadingLevel): void
+}>()
+
+const isOpen = ref(false)
+
+const headingLevels: number[] = [1, 2, 3, 4, 5, 6]
+
+const previewSizes: Record<HeadingLevel, string> = {
+  1: '1.5em',
+  2: '1.3em',
+  3: '1.17em',
+  4: '1em',
+  5: '0.83em',
+  6: '0.67em'
+}
+
+const toggleDropdown = () => {
+  isOpen.value = !isOpen.value
+}
+
+const close = () => {
+  isOpen.value = false
+}
+
+const selectLevel = (level: HeadingLevel) => {
+  emit('update:modelValue', level)
+  close()
+}
+
+const previewSize = (level: HeadingLevel): string => {
+  return previewSizes[level]
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .heading-level-selector {
-  position: relative;
-  display: inline-block;
+  @apply relative inline-block;
 }
 
 .selector-button {
@@ -87,42 +91,35 @@ export default {
 }
 
 .selector-dropdown {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 0.5rem;
-  background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  min-width: 200px;
-  z-index: 1000;
+  @apply absolute right-0 top-full mt-2 bg-white rounded-lg shadow-xl border min-w-[200px] z-[1000];
   animation: menuAppear 0.15s ease-out;
 }
 
 .level-option {
   @apply w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center justify-between;
+
+  &.active {
+    @apply bg-blue-50 text-blue-600;
+  }
 }
 
-.level-option.active {
-  @apply bg-blue-50 text-blue-600;
-}
+.level {
+  &-label {
+    @apply font-medium mr-4;
+  }
 
-.level-label {
-  @apply font-medium mr-4;
-}
-
-.level-preview {
-  @apply text-gray-500;
+  &-preview {
+    @apply text-gray-500;
+  }
 }
 
 @keyframes menuAppear {
   from {
-    opacity: 0;
+    @apply opacity-0;
     transform: scale(0.95) translateY(-5px);
   }
   to {
-    opacity: 1;
+    @apply opacity-100;
     transform: scale(1) translateY(0);
   }
 }

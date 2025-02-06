@@ -1,270 +1,259 @@
 <template>
   <div class="text-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
-    @dragstart="onDragStart($event)" @dragend="onDragEnd">
+    @dragstart="onDragStart" @dragend="onDragEnd">
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="$emit('duplicate')" />
+      @duplicate="emit('duplicate')" />
 
-    <DeleteBlockButton @delete="$emit('remove')" />
+    <DeleteBlockButton @delete="emit('remove')" />
 
     <div class="block-content">
       <div class="block-header flex items-center mb-2">
         <div class="block-type text-sm text-gray-500">Текстовый блок</div>
       </div>
 
-      <FormatToolbar :current-alignment="currentAlignment" :current-color="currentColor" @format-text="formatText"
-        @set-alignment="setAlignment" @apply-color="applyColor" />
+      <FormatToolbar 
+        :current-alignment="currentAlignment" 
+        :current-color="currentColor" 
+        @format-text="formatText"
+        @set-alignment="setAlignment" 
+        @apply-color="applyColor" />
 
-      <div ref="editor" contenteditable="true"
+      <div ref="editorRef" contenteditable="true"
         class="editor-content w-full p-2 border rounded transition-colors duration-200"
         :class="{ 'border-blue-400': dragState.isDragging }"
-        :style="{ textAlign: currentAlignment, color: currentColor }" @input="handleInput"
-        placeholder="Введите текст..."></div>
+        :style="editorStyles"
+        @input="handleInput"
+        @keyup="handleSelection"
+        @mouseup="handleSelection"
+        placeholder="Введите текст...">
+      </div>
     </div>
   </div>
 </template>
 
-<script>
-import dragdrop from '@/mixins/dragdrop'
+<script setup lang="ts">
+import { ref, watch, onMounted, nextTick, computed } from 'vue'
+import { useEditorStore } from '@/stores/editor'
+import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import type { TextContent, TextAlign } from '@/types/content'
+import type { BlockData } from '@/types/blocks'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import BlockControls from '@/components/shared/BlockControls.vue'
-import FormatToolbar from '@/components/shared/FormatToolbar.vue'
+import FormatToolbar from '@/components/shared/toolbar/FormatToolbar.vue'
+import type { CSSProperties } from 'vue'
 
-export default {
-  name: 'TextBlock',
+interface Props {
+  content: string | TextContent
+  index: number
+  isLast: boolean
+  parentId: string
+  isInsideColumn: boolean
+}
 
-  components: {
-    DeleteBlockButton,
-    BlockControls,
-    FormatToolbar
-  },
+const props = withDefaults(defineProps<Props>(), {
+  content: () => ({
+    text: '',
+    alignment: 'left' as TextAlign,
+    color: '#1F2937'
+  }),
+  parentId: 'main-editor',
+  isLast: false,
+  isInsideColumn: false
+})
 
-  mixins: [dragdrop],
+const emit = defineEmits<{
+  'update:content': [content: TextContent]
+  'remove': []
+  'duplicate': []
+  'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
+}>()
 
-  props: {
-    content: {
-      type: [String, Object],
-      default: ''
-    },
-    index: {
-      type: Number,
-      required: true
-    },
-    isLast: {
-      type: Boolean,
-      default: false
-    },
-    parentId: {
-      type: String,
-      default: 'main-editor'
-    },
-    isInsideColumn: {
-      type: Boolean,
-      default: false
-    }
-  },
+const store = useEditorStore()
+const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
 
-  data() {
-    return {
-      currentAlignment: 'left',
-      currentColor: '#1F2937',
-      savedSelection: null,
-      dragState: {
-        isDragging: false
-      }
-    }
-  },
+const editorRef = ref<HTMLDivElement>()
 
-  mounted() {
-    if (typeof this.content === 'string') {
-      this.$refs.editor.innerHTML = this.content;
-    } else if (typeof this.content === 'object') {
-      this.$refs.editor.innerHTML = this.content.text || '';
-      this.currentAlignment = this.content.alignment || 'left';
-      this.currentColor = this.content.color || '#1F2937';
-    }
-  },
+const currentAlignment = ref<TextAlign>('left')
+const currentColor = ref('#1F2937')
+const savedSelection = ref<Range | null>(null)
 
-  methods: {
-    handleMove(direction) {
-      const fromIndex = this.index
-      const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
-      this.$store.commit('MOVE_BLOCK', { fromIndex, toIndex })
-    },
+const editorStyles = computed((): CSSProperties => ({
+  textAlign: currentAlignment.value,
+  color: currentColor.value
+}))
 
-    removeBlock() {
-      this.$emit('remove-original-block', {
-        parentId: this.parentId,
-        index: this.index
-      })
-    },
+const saveSelection = () => {
+  const selection = window.getSelection()
+  if (selection && selection.rangeCount > 0) {
+    savedSelection.value = selection.getRangeAt(0)
+  }
+}
 
-    saveSelection() {
-      const selection = window.getSelection();
-      if (selection.rangeCount > 0) {
-        this.savedSelection = selection.getRangeAt(0);
-      }
-    },
-
-    restoreSelection() {
-      if (this.savedSelection) {
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(this.savedSelection);
-      }
-    },
-
-    handleInput(event) {
-      const selection = window.getSelection();
-      const range = selection.getRangeAt(0);
-      const start = range.startOffset;
-      const end = range.endOffset;
-
-      const updatedContent = {
-        text: event.target.innerHTML,
-        alignment: this.currentAlignment,
-        color: this.currentColor
-      };
-      
-      this.$emit('update:content', updatedContent);
-
-      this.$nextTick(() => {
-        const newRange = document.createRange();
-        newRange.setStart(selection.anchorNode, start);
-        newRange.setEnd(selection.anchorNode, end);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      });
-    },
-
-    formatText(command) {
-      this.applyTextCommand(command);
-    },
-
-    setAlignment(align) {
-      this.currentAlignment = align;
-      this.applyTextCommand(`justify${align.charAt(0).toUpperCase() + align.slice(1)}`);
-    },
-
-    applyColor(color) {
-      this.currentColor = color;
-      this.applyTextCommand('foreColor', color);
-    },
-
-    applyTextCommand(command) {
-      this.$refs.editor.focus();
-      this.restoreSelection();
-      document.execCommand(command, false, null);
-      this.saveSelection();
-    },
-
-    onDragStart(event) {
-      const blockData = {
-        type: 'Text',
-        index: this.index,
-        parentId: this.parentId,
-        source: 'editor',
-        content: this.content,
-        originalBlock: {
-          type: 'Text',
-          content: this.content
-        }
-      }
-      event.dataTransfer.setData('application/json', JSON.stringify(blockData))
-    },
-
-    handleSelection() {
-      this.saveSelection();
-    }
-  },
-
-  watch: {
-    content: {
-      handler(newContent) {
-        if (this.$refs.editor && !this.$refs.editor.matches(':focus')) {
-          // Обновляем DOM только если элемент не в фокусе
-          if (typeof newContent === 'string') {
-            this.$refs.editor.innerHTML = newContent;
-          } else if (typeof newContent === 'object') {
-            this.$refs.editor.innerHTML = newContent.text || '';
-            this.currentAlignment = newContent.alignment || 'left';
-            this.currentColor = newContent.color || '#1F2937';
-          }
-        }
-      },
-      deep: true
-    }
-  },
-
-  directives: {
-    clickOutside: {
-      mounted(el, binding) {
-        el.clickOutsideEvent = function (event) {
-          if (!(el === event.target || el.contains(event.target))) {
-            binding.value(event)
-          }
-        }
-        document.addEventListener('click', el.clickOutsideEvent)
-      },
-      unmounted(el) {
-        document.removeEventListener('click', el.clickOutsideEvent)
-      }
+const restoreSelection = () => {
+  if (savedSelection.value && editorRef.value) {
+    const selection = window.getSelection()
+    if (selection) {
+      selection.removeAllRanges()
+      selection.addRange(savedSelection.value)
     }
   }
 }
+
+const handleInput = (event: Event) => {
+  if (!editorRef.value) return
+  
+  const target = event.target as HTMLDivElement
+  const selection = window.getSelection()
+  if (!selection) return
+
+  const range = selection.getRangeAt(0)
+  const start = range.startOffset
+  const end = range.endOffset
+
+  const updatedContent: TextContent = {
+    text: target.innerHTML,
+    alignment: currentAlignment.value,
+    color: currentColor.value
+  }
+  
+  emit('update:content', updatedContent)
+
+  nextTick(() => {
+    if (!selection.anchorNode) return
+    const newRange = document.createRange()
+    newRange.setStart(selection.anchorNode, start)
+    newRange.setEnd(selection.anchorNode, end)
+    selection.removeAllRanges()
+    selection.addRange(newRange)
+  })
+}
+
+const formatText = (command: string) => {
+  applyTextCommand(command)
+}
+
+const setAlignment = (align: string) => {
+  currentAlignment.value = align as TextAlign
+  applyTextCommand(`justify${align.charAt(0).toUpperCase() + align.slice(1)}`)
+}
+
+const applyColor = (color: string) => {
+  currentColor.value = color
+  applyTextCommand('foreColor', color)
+}
+
+const applyTextCommand = (command: string, value?: string) => {
+  if (!editorRef.value) return
+  
+  editorRef.value.focus()
+  restoreSelection()
+  document.execCommand(command, false, value)
+  saveSelection()
+}
+
+const handleMove = (direction: 'up' | 'down') => {
+  emit('move', {
+    direction,
+    index: props.index,
+    parentId: props.parentId
+  })
+}
+
+const onDragStart = (event: DragEvent) => {
+  if (!event.dataTransfer) return
+  
+  const blockData: BlockData = {
+    type: 'Text',
+    index: props.index,
+    originalIndex: props.index,
+    parentId: props.parentId,
+    source: 'editor',
+    content: {
+      text: editorRef.value?.innerHTML || '',
+      alignment: currentAlignment.value,
+      color: currentColor.value
+    },
+    originalBlock: {
+      type: 'Text',
+      content: {
+        text: editorRef.value?.innerHTML || '',
+        alignment: currentAlignment.value,
+        color: currentColor.value
+      }
+    }
+  }
+
+  try {
+    const jsonData = JSON.stringify(blockData)
+    event.dataTransfer.setData('application/json', jsonData)
+    startDrag(event, blockData)
+  } catch (error) {
+    console.error('Error setting drag data:', error)
+  }
+}
+
+const handleSelection = () => {
+  saveSelection()
+}
+
+onMounted(() => {
+  if (!editorRef.value) return
+  
+  if (typeof props.content === 'string') {
+    editorRef.value.innerHTML = props.content
+  } else {
+    editorRef.value.innerHTML = props.content.text || ''
+    currentAlignment.value = props.content.alignment || 'left'
+    currentColor.value = props.content.color || '#1F2937'
+  }
+})
+
+watch(() => props.content, (newContent) => {
+  if (!editorRef.value || editorRef.value.matches(':focus')) return
+  
+  if (typeof newContent === 'string') {
+    editorRef.value.innerHTML = newContent
+  } else {
+    editorRef.value.innerHTML = newContent.text || ''
+    currentAlignment.value = newContent.alignment || 'left'
+    currentColor.value = newContent.color || '#1F2937'
+  }
+}, { deep: true })
 </script>
 
-<style scoped>
-
-.heading-block, .text-block, .image-block {
-  position: relative;
-  background: white;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-:deep(.block-controls-wrapper) {
-  z-index: 1000 !important;
-}
-
+<style lang="scss" scoped>
 .text-block {
-  background: white;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
+  @apply bg-white rounded-lg shadow-sm p-4;
 
-.text-block:not(.is-inside-column) :deep(.block-controls) {
-  opacity: 0;
-  transform: translateX(10px);
-  transition: all 0.2s ease-in-out;
-}
+  &:not(.is-inside-column) {
+    :deep(.block-controls) {
+      @apply opacity-0 translate-x-2.5 transition-all duration-200;
+    }
 
-.text-block:not(.is-inside-column):hover :deep(.block-controls) {
-  opacity: 1;
-  transform: translateX(0);
+    &:hover :deep(.block-controls) {
+      @apply opacity-100 translate-x-0;
+    }
+  }
+
+  :deep(.delete-button) {
+    @apply opacity-0 transition-opacity duration-200;
+  }
+
+  &:hover :deep(.delete-button) {
+    @apply opacity-100;
+  }
 }
 
 .editor-content {
-  min-height: 60px;
-}
+  @apply min-h-[60px];
 
-.editor-content:empty:before {
-  content: attr(placeholder);
-  color: #9CA3AF;
-}
+  &:empty:before {
+    content: attr(placeholder);
+    @apply text-gray-400;
+  }
 
-.editor-content:focus {
-  @apply border-blue-400;
-  outline: none;
-}
-
-.text-block :deep(.delete-button) {
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.text-block:hover :deep(.delete-button) {
-  opacity: 1;
+  &:focus {
+    @apply border-blue-400 outline-none;
+  }
 }
 </style>

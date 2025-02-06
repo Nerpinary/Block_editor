@@ -1,61 +1,93 @@
 <template>
   <div class="preview-heading-block">
-    <component :is="'h' + (headingContent.level || 1)" :style="{
-      color: headingContent.color || 'inherit',
-      textAlign: headingContent.alignment || 'left'
-    }" class="font-bold" :class="{
-        'text-4xl': headingContent.level === 1,
-        'text-3xl': headingContent.level === 2,
-        'text-2xl': headingContent.level === 3,
-        'text-xl': headingContent.level === 4,
-        'text-lg': headingContent.level === 5,
-        'text-base': headingContent.level === 6
-      }">
-      {{ headingContent.text || content }}
+    <component 
+      :is="`h${parsedContent.level}`"
+      :style="{
+        color: parsedContent.color || 'inherit',
+        textAlign: parsedContent.alignment || 'left'
+      }" 
+      class="font-bold" 
+      :class="headingClasses"
+    >
+      {{ parsedContent.text }}
     </component>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'PreviewHeadingBlock',
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { HeadingContent, HeadingLevel, TextAlign } from '@/types/content'
 
-  props: {
-    content: {
-      type: [String, Object],
-      default: () => ({
-        text: '',
-        level: 1,
-        alignment: 'left',
-        color: 'inherit'
-      })
-    }
-  },
+interface Props {
+  content: HeadingContent | string
+}
 
-  computed: {
-    headingContent() {
-      if (typeof this.content === 'string') {
-        try {
-          const parsed = JSON.parse(this.content)
-          if (typeof parsed === 'object') {
-            return {
-              text: parsed.text || '',
-              level: parsed.level || 1,
-              alignment: parsed.alignment || 'left',
-              color: parsed.color || 'inherit'
-            }
-          }
-        } catch (e) {
-          return {
-            text: this.content,
-            level: 1,
-            alignment: 'left',
-            color: 'inherit'
-          }
+const props = defineProps<Props>()
+
+const isValidHeadingLevel = (level: number): level is HeadingLevel => {
+  return level >= 1 && level <= 6
+}
+
+const normalizeHeadingLevel = (level: number | undefined): HeadingLevel => {
+  if (level === undefined || !isValidHeadingLevel(level)) {
+    return 1
+  }
+  return level
+}
+
+const parseContent = (content: string | HeadingContent): HeadingContent => {
+  const defaultContent: HeadingContent = {
+    text: '',
+    level: 1 as HeadingLevel,
+    alignment: 'left' as TextAlign,
+    color: 'inherit'
+  }
+
+  if (typeof content === 'string') {
+    try {
+      const parsed = JSON.parse(content)
+      if (typeof parsed === 'object') {
+        const level = normalizeHeadingLevel(Number(parsed.level))
+        return {
+          text: String(parsed.text || ''),
+          level,
+          alignment: (parsed.alignment || 'left') as TextAlign,
+          color: String(parsed.color || 'inherit')
         }
       }
-      return this.content
+      return {
+        ...defaultContent,
+        text: content
+      }
+    } catch (e) {
+      return {
+        ...defaultContent,
+        text: content
+      }
     }
   }
+  return {
+    text: content.text || '',
+    level: normalizeHeadingLevel(content.level),
+    alignment: content.alignment || 'left' as TextAlign,
+    color: content.color || 'inherit'
+  }
+}
+
+const parsedContent = computed(() => parseContent(props.content))
+
+const headingClasses = computed(() => ({
+  'text-4xl': parsedContent.value.level === 1,
+  'text-3xl': parsedContent.value.level === 2,
+  'text-2xl': parsedContent.value.level === 3,
+  'text-xl': parsedContent.value.level === 4,
+  'text-lg': parsedContent.value.level === 5,
+  'text-base': parsedContent.value.level === 6
+}))
+</script>
+
+<script lang="ts">
+export default {
+  name: 'PreviewHeadingBlock'
 }
 </script>

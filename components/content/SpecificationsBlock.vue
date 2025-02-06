@@ -1,25 +1,19 @@
 <template>
   <div class="specifications-block relative group" :class="{ 'is-dragging': dragState.isDragging }" draggable="true"
-    @dragstart="onDragStart($event)" @dragend="onDragEnd">
+    @dragstart="onDragStart" @dragend="onDragEnd">
     <BlockControls v-if="!isInsideColumn" :index="index" :is-last="isLast" @move="handleMove"
-      @duplicate="$emit('duplicate')" />
+      @duplicate="emit('duplicate')" />
 
-    <DeleteBlockButton @delete="$emit('remove')" />
+    <DeleteBlockButton @delete="emit('remove')" />
 
     <div class="block-content">
       <div class="block-header flex items-center justify-between mb-4">
         <div class="block-type text-sm text-gray-500">Характеристики</div>
         <div class="controls flex items-center gap-2">
-          <button 
-            class="control-button" 
-            @click="addRow"
-            title="Добавить строку">
+          <button class="control-button" @click="addRow" title="Добавить строку">
             <PlusIcon :size="5" />
           </button>
-          <button 
-            v-if="localRows.length > 1"
-            class="control-button" 
-            @click="removeLastRow"
+          <button v-if="localRows.length > 1" class="control-button" @click="removeLastRow"
             title="Удалить последнюю строку">
             <MinusIcon :size="5" />
           </button>
@@ -29,28 +23,15 @@
       <h3 class="text-lg font-semibold mb-4">Основные характеристики</h3>
 
       <div class="specifications-table">
-        <div 
-          v-for="(row, index) in localRows" 
-          :key="index"
-          class="table-row"
+        <div v-for="(row, index) in localRows" :key="index" class="table-row"
           :class="{ 'bg-gray-50': index % 2 === 0 }">
           <div class="table-cell">
-            <input
-              type="text"
-              :value="row.key"
-              class="cell-input"
-              placeholder="Параметр"
-              @input="updateRowKey(index, $event.target.value)"
-            >
+            <input type="text" :value="row.key" class="cell-input" placeholder="Параметр"
+              @input="updateRowKey(index, ($event.target as HTMLInputElement).value)">
           </div>
           <div class="table-cell">
-            <input
-              type="text"
-              :value="row.value"
-              class="cell-input"
-              placeholder="Значение"
-              @input="updateRowValue(index, $event.target.value)"
-            >
+            <input type="text" :value="row.value" class="cell-input" placeholder="Значение"
+              @input="updateRowValue(index, ($event.target as HTMLInputElement).value)">
           </div>
         </div>
       </div>
@@ -58,157 +39,158 @@
   </div>
 </template>
 
-<script>
-import dragdrop from '@/mixins/dragdrop'
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue'
+import { useEditorStore } from '@/stores/editor'
+import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import type { SpecificationsContent, SpecificationRow } from '@/types/content'
+import type { BlockData } from '@/types/blocks'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import BlockControls from '@/components/shared/BlockControls.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
 import MinusIcon from '@/components/icons/MinusIcon.vue'
 
-export default {
-  name: 'SpecificationsBlock',
+interface Props {
+  content: string | SpecificationsContent
+  index: number
+  isLast: boolean
+  parentId: string
+  isInsideColumn: boolean
+}
 
-  components: {
-    DeleteBlockButton,
-    BlockControls,
-    PlusIcon,
-    MinusIcon
-  },
+const props = withDefaults(defineProps<Props>(), {
+  content: () => ({
+    rows: [
+      { key: '', value: '' },
+      { key: '', value: '' }
+    ]
+  }),
+  parentId: 'main-editor',
+  isLast: false,
+  isInsideColumn: false
+})
 
-  mixins: [dragdrop],
+const emit = defineEmits<{
+  'update:content': [content: SpecificationsContent]
+  'remove': []
+  'duplicate': []
+  'move': [payload: { direction: 'up' | 'down', index: number, parentId: string }]
+}>()
 
-  props: {
-    content: {
-      type: [String, Object],
-      default: () => ({
+const store = useEditorStore()
+const { dragState, onDragStart: startDrag, onDragEnd } = useDragAndDrop()
+
+const localRows = ref<SpecificationRow[]>([])
+
+const initializeContent = (content: string | SpecificationsContent): SpecificationsContent => {
+  if (typeof content === 'string') {
+    try {
+      return JSON.parse(content) as SpecificationsContent
+    } catch (e) {
+      return {
         rows: [
           { key: '', value: '' },
           { key: '', value: '' }
         ]
-      })
-    },
-    index: {
-      type: Number,
-      required: true
-    },
-    isLast: {
-      type: Boolean,
-      default: false
-    },
-    parentId: {
-      type: String,
-      default: 'main-editor'
-    },
-    isInsideColumn: {
-      type: Boolean,
-      default: false
-    }
-  },
-
-  data() {
-    return {
-      localRows: [],
-      dragState: {
-        isDragging: false
       }
-    }
-  },
-
-  mounted() {
-    let content = this.content;
-    if (typeof content === 'string') {
-      try {
-        content = JSON.parse(content);
-      } catch (e) {
-        content = {
-          rows: [
-            { key: '', value: '' },
-            { key: '', value: '' }
-          ]
-        };
-      }
-    }
-    this.localRows = content.rows.map(row => ({ ...row }));
-  },
-
-  methods: {
-    handleMove(direction) {
-      const fromIndex = this.index
-      const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
-      this.$store.commit('MOVE_BLOCK', { fromIndex, toIndex })
-    },
-
-    addRow() {
-      const newRows = [...this.localRows, { key: '', value: '' }];
-      this.localRows = newRows;
-      this.updateContent();
-    },
-
-    removeLastRow() {
-      if (this.localRows.length > 1) {
-        const newRows = [...this.localRows.slice(0, -1)];
-        this.localRows = newRows;
-        this.updateContent();
-      }
-    },
-
-    updateRowKey(index, newKey) {
-      const newRows = this.localRows.map((row, i) => 
-        i === index ? { ...row, key: newKey } : { ...row }
-      );
-      this.localRows = newRows;
-      this.updateContent();
-    },
-
-    updateRowValue(index, newValue) {
-      const newRows = this.localRows.map((row, i) => 
-        i === index ? { ...row, value: newValue } : { ...row }
-      );
-      this.localRows = newRows;
-      this.updateContent();
-    },
-
-    updateContent() {
-      this.$emit('update:content', {
-        rows: this.localRows
-      });
-    },
-
-    onDragStart(event) {
-      const blockData = {
-        type: 'Specifications',
-        index: this.index,
-        parentId: this.parentId,
-        source: 'editor',
-        content: { rows: [...this.localRows] },
-        originalBlock: {
-          type: 'Specifications',
-          content: { rows: [...this.localRows] }
-        }
-      }
-      event.dataTransfer.setData('application/json', JSON.stringify(blockData))
-    }
-  },
-
-  watch: {
-    'content.rows': {
-      handler(newRows) {
-        if (JSON.stringify(newRows) !== JSON.stringify(this.localRows)) {
-          this.localRows = newRows.map(row => ({ ...row }));
-        }
-      },
-      deep: true
     }
   }
+  return content
 }
+
+const updateContent = () => {
+  emit('update:content', {
+    rows: localRows.value
+  })
+}
+
+const addRow = () => {
+  localRows.value = [...localRows.value, { key: '', value: '' }]
+  updateContent()
+}
+
+const removeLastRow = () => {
+  if (localRows.value.length > 1) {
+    localRows.value = localRows.value.slice(0, -1)
+    updateContent()
+  }
+}
+
+const updateRowKey = (index: number, newKey: string) => {
+  localRows.value = localRows.value.map((row, i) =>
+    i === index ? { ...row, key: newKey } : row
+  )
+  updateContent()
+}
+
+const updateRowValue = (index: number, newValue: string) => {
+  localRows.value = localRows.value.map((row, i) =>
+    i === index ? { ...row, value: newValue } : row
+  )
+  updateContent()
+}
+
+const handleMove = (direction: 'up' | 'down') => {
+  const fromIndex = props.index
+  const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
+  store.moveBlock(fromIndex, toIndex)
+}
+
+const onDragStart = (event: DragEvent) => {
+  if (!event.dataTransfer) return
+
+  const blockData: BlockData = {
+    type: 'Specifications',
+    index: props.index,
+    originalIndex: props.index,
+    parentId: props.parentId,
+    source: 'editor',
+    content: { rows: [...localRows.value] },
+    originalBlock: {
+      type: 'Specifications',
+      content: { rows: [...localRows.value] }
+    }
+  }
+
+  try {
+    const jsonData = JSON.stringify(blockData)
+    event.dataTransfer.setData('application/json', jsonData)
+    startDrag(event, blockData)
+  } catch (error) {
+    console.error('Error setting drag data:', error)
+  }
+}
+
+onMounted(() => {
+  const content = initializeContent(props.content)
+  localRows.value = content.rows.map(row => ({ ...row }))
+})
+
+watch(() => props.content, (newContent) => {
+  const content = initializeContent(newContent)
+
+  if (JSON.stringify(content.rows) !== JSON.stringify(localRows.value)) {
+    localRows.value = content.rows.map(row => ({ ...row }))
+  }
+}, { deep: true })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .specifications-block {
-  background: white;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  @apply bg-white rounded-lg shadow-sm p-4;
+
+  :deep(.block-controls),
+  :deep(.delete-button) {
+    @apply opacity-0 transition-opacity duration-200;
+  }
+
+  &:hover {
+
+    :deep(.block-controls),
+    :deep(.delete-button) {
+      @apply opacity-100;
+    }
+  }
 }
 
 .control-button {
@@ -217,21 +199,17 @@ export default {
 
 .specifications-table {
   @apply border border-gray-200 rounded-lg overflow-hidden;
-}
 
-.table-row {
-  @apply flex border-b last:border-b-0;
-}
+  .table-row {
+    @apply flex border-b last:border-b-0;
+  }
 
-.table-cell {
-  @apply flex-1 p-2 border-r last:border-r-0;
-}
+  .table-cell {
+    @apply flex-1 p-2 border-r last:border-r-0;
+  }
 
-.cell-input {
-  @apply w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-2 py-1;
+  .cell-input {
+    @apply w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-2 py-1;
+  }
 }
-
-:deep(.block-controls-wrapper) {
-  z-index: 1000 !important;
-}
-</style> 
+</style>

@@ -3,8 +3,8 @@
     <div v-for="(block, index) in blocks" :key="block.id" :data-index="index" class="editor-block mb-4"
       @dragenter.prevent @dragleave="onDragLeave">
       <component :is="getComponentName(block.type)" :content="block.content" :index="index" :parent-id="'main-editor'"
-        :is-last="index === blocks.length - 1" @update:content="updateBlockContent(index, $event)"
-        @remove="$store.commit('REMOVE_BLOCK', index)" @duplicate="duplicateBlock(index)" />
+        :is-last="index === blocks.length - 1" :is-inside-column="false" @update:content="updateBlockContent(index, $event)"
+        @remove="store.removeBlock(index)" @duplicate="duplicateBlock(index)" />
     </div>
 
     <div v-if="blocks.length === 0" class="text-center py-12 text-gray-500">
@@ -15,9 +15,12 @@
   </div>
 </template>
 
-<script>
-import dragdrop from '@/mixins/dragdrop'
+<script setup lang="ts">
+import { computed, nextTick } from 'vue'
+import { useEditorStore } from '@/stores/editor'
 import { BLOCK_TYPES } from '@/constants/blocks'
+import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import type { Block, BlockType, BlockContent } from '@/types/blocks'
 import TextBlock from '@/components/content/TextBlock.vue'
 import HeadingBlock from '@/components/content/HeadingBlock.vue'
 import ImageBlock from '@/components/content/ImageBlock.vue'
@@ -28,156 +31,135 @@ import ListBlock from '@/components/content/ListBlock.vue'
 import TableBlock from '@/components/content/TableBlock.vue'
 import BlockMenu from '@/components/shared/BlockMenu.vue'
 
-export default {
-  name: 'EditorContent',
+const store = useEditorStore()
+const { onDragOver, onDragLeave, onDrop } = useDragAndDrop()
 
-  components: {
-    TextBlock,
-    HeadingBlock,
-    ImageBlock,
-    ColumnsBlock,
-    SpecificationsBlock,
-    ProsConsBlock,
-    ListBlock,
-    TableBlock,
-    BlockMenu
-  },
+const blocks = computed(() => store.blocks)
 
-  mixins: [dragdrop],
+const componentMap = {
+  'Text': TextBlock,
+  'Heading': HeadingBlock,
+  'Image': ImageBlock,
+  'Columns': ColumnsBlock,
+  'List': ListBlock,
+  'Table': TableBlock,
+  'Specifications': SpecificationsBlock,
+  'ProsCons': ProsConsBlock
+}
 
-  computed: {
-    blocks() {
-      return this.$store.state.blocks
-    }
-  },
+const getComponentName = (type: BlockType) => {
+  return componentMap[type] || null
+}
 
-  methods: {
-    getComponentName(type) {
-      return `${type}Block`
-    },
+const updateBlockContent = async (index: number, content: BlockContent) => {
+  const updatedBlock: Block = {
+    ...blocks.value[index],
+    content: typeof content === 'object' ? { ...content } : content
+  }
+  
+  store.updateBlock({ index, block: updatedBlock })
+  await nextTick()
+}
 
-    updateBlockContent(index, content) {
-      console.log('Updating content:', index, content)
-      const updatedBlock = {
-        ...this.blocks[index],
-        content: typeof content === 'object' ? { ...content } : content
+const duplicateBlock = (index: number) => {
+  const block = { ...blocks.value[index] }
+  if (typeof block.content === 'object') {
+    block.content = { ...block.content }
+  }
+  
+  store.addBlock({
+    ...block,
+    id: Date.now()
+  })
+}
+
+const getDefaultContent = (type: BlockType): BlockContent => {
+  switch (type) {
+    case BLOCK_TYPES.TEXT:
+      return ''
+    case BLOCK_TYPES.HEADING:
+      return {
+        text: '',
+        alignment: 'left',
+        color: '#1F2937',
+        level: 1
       }
-      
-      this.$store.commit('UPDATE_BLOCK', {
-        index,
-        block: updatedBlock
-      })
-
-      this.$nextTick(() => {
-        this.$forceUpdate()
-      })
-    },
-
-    duplicateBlock(index) {
-      const block = { ...this.blocks[index] }
-      if (typeof block.content === 'object') {
-        block.content = { ...block.content }
+    case BLOCK_TYPES.IMAGE:
+      return {
+        url: '',
+        caption: ''
       }
-      this.$store.commit('ADD_BLOCK', {
-        ...block,
-        id: Date.now()
-      })
-    },
-
-    handleMoveFromEditor({ index }) {
-      this.$store.commit('REMOVE_BLOCK', index)
-    },
-
-    getDefaultContent(type) {
-      switch (type) {
-        case BLOCK_TYPES.TEXT:
-          return ''
-        case BLOCK_TYPES.HEADING:
-          return {
-            text: '',
-            level: 1
-          }
-        case BLOCK_TYPES.IMAGE:
-          return {
-            url: '',
-            caption: ''
-          }
-        case BLOCK_TYPES.TWO_COLUMNS:
-          return {
-            columns: [[], []]
-          }
-        case BLOCK_TYPES.SPECIFICATIONS:
-          return {
-            rows: [
-              { key: '', value: '' },
-              { key: '', value: '' }
-            ]
-          }
-        case BLOCK_TYPES.PROS_CONS:
-          return {
-            pros: '',
-            cons: ''
-          }
-        case BLOCK_TYPES.LIST:
-          return {
-            items: [
-              { text: '' },
-              { text: '' }
-            ]
-          }
-        case BLOCK_TYPES.TABLE:
-          return {
-            data: [
-              ['', ''],
-              ['', '']
-            ]
-          }
-        default:
-          return ''
+    case BLOCK_TYPES.TWO_COLUMNS:
+      return {
+        columns: [[], []]
       }
-    }
+    case BLOCK_TYPES.SPECIFICATIONS:
+      return {
+        rows: [
+          { key: '', value: '' },
+          { key: '', value: '' }
+        ]
+      }
+    case BLOCK_TYPES.PROS_CONS:
+      return {
+        pros: '',
+        cons: ''
+      }
+    case BLOCK_TYPES.LIST:
+      return {
+        items: [
+          { text: '' },
+          { text: '' }
+        ]
+      }
+    case BLOCK_TYPES.TABLE:
+      return {
+        data: [
+          ['', ''],
+          ['', '']
+        ]
+      }
+    default:
+      return ''
   }
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
 .editor-content {
-  isolation: isolate;
-}
+  @apply isolate;
 
-.editor-block {
-  position: relative;
-  z-index: 1;
-}
+  .editor-block {
+    @apply relative z-[1];
 
-.editor-block:hover {
-  z-index: 2;
-}
+    &:hover {
+      @apply z-[2];
 
-.editor-block:hover .menu-trigger {
-  opacity: 1;
-}
+      .menu-trigger {
+        @apply opacity-100;
+      }
+    }
 
-.editor-block.drop-before::before,
-.editor-block.drop-after::after {
-  content: '';
-  position: absolute;
-  left: -1rem;
-  right: -1rem;
-  height: 2px;
-  background-color: #3B82F6;
-  pointer-events: none;
-}
+    &.drop-before,
+    &.drop-after {
+      &::before,
+      &::after {
+        content: '';
+        @apply absolute -left-4 -right-4 h-0.5 bg-blue-500 pointer-events-none;
+      }
+    }
 
-.editor-block.drop-before::before {
-  top: -2px;
-}
+    &.drop-before::before {
+      @apply -top-0.5;
+    }
 
-.editor-block.drop-after::after {
-  bottom: -2px;
+    &.drop-after::after {
+      @apply -bottom-0.5;
+    }
+  }
 }
 
 .dragging {
-  opacity: 0.5;
+  @apply opacity-50;
 }
 </style>
