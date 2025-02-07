@@ -27,8 +27,8 @@
       
       <SavePageDialog
         v-if="showSaveDialog"
-        @close="showSaveDialog = false"
-        @saved="onPageSaved"
+        v-model="showSaveDialog"
+        @save="onPageSaved"
       />
     </div>
   </div>
@@ -80,13 +80,10 @@ const handleAction = (event: string) => {
   }
 }
 
-const handleSave = () => {
+const handleSave = async () => {
   try {
     if (props.currentPageId) {
-      emit('saved', {
-        title: props.pageTitle,
-        slug: props.pageSlug
-      })
+      await editorStore.savePage({ id: String(props.currentPageId) })
     } else {
       showSaveDialog.value = true
     }
@@ -95,9 +92,16 @@ const handleSave = () => {
   }
 }
 
-const onPageSaved = (data: PageData) => {
+const onPageSaved = async (data: PageData) => {
+  console.log('Сохранение страницы:', data)
+
+  if (!data || !data.title) {
+    console.error('Ошибка: title отсутствует в данных страницы', data)
+    return
+  }
+
   try {
-    emit('saved', data)
+    await editorStore.savePage({ id: String(data.id), title: data.title, slug: data.slug })
     showSaveDialog.value = false
   } catch (error) {
     console.error('Error handling page save:', error)

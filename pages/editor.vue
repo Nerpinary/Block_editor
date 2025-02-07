@@ -8,7 +8,7 @@
         :page-title="pageTitle"
         :page-slug="pageSlug"
         @preview="handlePreview"
-        @saved="onPageSaved"
+        @saved="savePage"
       />
 
       <EditorContent 
@@ -29,20 +29,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, toRaw, watch } from 'vue'
 import { useEditorStore } from '@/stores/editor'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import BlockLibrary from '@/components/editor/BlockLibrary.vue'
 import EditorHeader from '@/components/editor/EditorHeader.vue'
 import EditorContent from '@/components/editor/EditorContent.vue'
 import Notification from '@/components/shared/Notification.vue'
 import type { Block, BlockType } from '@/types/blocks'
-import type { Page } from '@/types/page'
-import type { PageData } from '@/types/page'
+import type { Page, PageData } from '@/types/page'
 
 const router = useRouter()
 const route = useRoute()
 const store = useEditorStore()
-const showSaveDialog = ref(false)
-
 const showNotification = ref(false)
 const notificationMessage = ref('')
 const currentPageId = ref<string | null>(null)
@@ -51,65 +48,55 @@ const pageSlug = ref('')
 
 const blocks = computed(() => store.blocks)
 
-interface AddBlockParams {
-  type: BlockType
-  content: any
-}
+watch(
+  () => route.query.edit,
+  async (newId) => {
+    if (newId) {
+      await store.loadPage(newId as string)
+      if (store.currentPage) {
+        pageTitle.value = store.currentPage.title
+        pageSlug.value = store.currentPage.slug
+      }
+    }
+  },
+  { immediate: true }
+)
 
-const addBlock = (block: AddBlockParams) => {
-  const newBlock: Block = {
+const addBlock = (block: { type: BlockType; content: any }) => {
+  store.addBlock({
     id: Date.now(),
     type: block.type,
     content: block.content,
     parentId: 'main-editor'
-  }
-  store.addBlock(newBlock)
+  })
 }
 
 const updateBlockContent = ({ index, content }: { index: number; content: string | object }) => {
   const currentBlock = blocks.value[index]
-  
-  const updatedBlock = {
-    ...currentBlock,
-    content
+  if (currentBlock) {
+    store.updateBlock({ index, block: { ...currentBlock, content } as Block })
   }
-  
-  store.updateBlock({ index, block: updatedBlock as Block })
 }
 
 const removeBlock = ({ index }: { index: number }) => {
   store.removeBlock(index)
 }
 
-const handleSave = async (pageData: PageData) => {
+const savePage = async (pageData: PageData) => {
   try {
-    await store.savePage({
-      title: pageData.title,
-      slug: pageData.slug,
-      blocks: store.blocks,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    })
-    
-    showSaveDialog.value = false
+    const pageToSave: Partial<Page> = {
+      ...pageData,
+      id: pageData.id ? String(pageData.id) : undefined
+    }
+    await store.savePage(pageToSave)
     router.push('/saved-pages')
   } catch (error) {
     console.error('Error saving page:', error)
   }
 }
 
-const onPageSaved = async (pageData: PageData) => {
-  await handleSave(pageData)
-}
-
 const handlePreview = () => {
-  const rawBlocks = toRaw(store.blocks).map(block => ({
-    id: block.id,
-    type: block.type,
-    content: toRaw(block.content)
-  }))
-  
-  localStorage.setItem('temp_blocks', JSON.stringify(rawBlocks))
+  localStorage.setItem('temp_blocks', JSON.stringify(toRaw(store.blocks)))
   router.push('/preview')
 }
 
@@ -118,8 +105,7 @@ onMounted(() => {
     const tempBlocks = localStorage.getItem('temp_blocks')
     if (tempBlocks) {
       try {
-        const blocks = JSON.parse(tempBlocks)
-        store.setBlocks(blocks)
+        store.setBlocks(JSON.parse(tempBlocks))
       } catch (error) {
         console.error('Error parsing blocks:', error)
       }
@@ -129,12 +115,7 @@ onMounted(() => {
 
 onBeforeRouteLeave((to) => {
   if (to.path === '/preview') {
-    const rawBlocks = toRaw(store.blocks).map(block => ({
-      id: block.id,
-      type: block.type,
-      content: toRaw(block.content)
-    }))
-    localStorage.setItem('temp_blocks', JSON.stringify(rawBlocks))
+    localStorage.setItem('temp_blocks', JSON.stringify(toRaw(store.blocks)))
   }
 })
 </script>
@@ -143,7 +124,6 @@ onBeforeRouteLeave((to) => {
 .block {
   &-wrapper {
     @apply transition-all duration-300 ease-in-out mb-4;
-
     &:hover {
       transform: translateX(8px);
     }
@@ -151,7 +131,6 @@ onBeforeRouteLeave((to) => {
 
   &-library-item {
     @apply cursor-pointer p-2 rounded-md transition-colors duration-200;
-
     &:hover {
       @apply bg-gray-50;
     }
@@ -163,7 +142,6 @@ onBeforeRouteLeave((to) => {
 
   &-item {
     @apply cursor-grab;
-
     &:active {
       @apply cursor-grabbing;
     }
@@ -174,12 +152,10 @@ onBeforeRouteLeave((to) => {
   &-move {
     @apply transition-transform duration-300 ease-in-out;
   }
-
   &-enter-active,
   &-leave-active {
     @apply transition-all duration-300 ease-in-out;
   }
-
   &-enter-from,
   &-leave-to {
     @apply opacity-0;
@@ -189,11 +165,9 @@ onBeforeRouteLeave((to) => {
 
 .drag-wrapper {
   @apply cursor-move relative;
-
   &[data-dragging="true"] {
     @apply opacity-50;
   }
-
   &::before {
     content: "⋮";
     @apply absolute -left-5 top-1/2 text-xl text-gray-600;
@@ -205,7 +179,6 @@ onBeforeRouteLeave((to) => {
   &-ghost {
     @apply opacity-50 bg-blue-100;
   }
-
   &-drag {
     @apply opacity-50;
   }

@@ -1,8 +1,9 @@
+// Обновленный EditorContent.vue
 <template>
   <div class="editor-content max-w-4xl mx-auto p-8" @dragover="onDragOver" @drop="onDrop">
     <div v-for="(block, index) in blocks" :key="block.id" :data-index="index" class="editor-block mb-4"
       @dragenter.prevent @dragleave="onDragLeave">
-      <component :is="getComponentName(block.type)" v-bind="getComponentProps(block, index)" />
+      <component :is="componentMap[block.type]" v-bind="getComponentProps(block, index)" />
     </div>
 
     <div v-if="blocks.length === 0" class="text-center py-12 text-gray-500">
@@ -16,44 +17,20 @@
 <script setup lang="ts">
 import { computed, nextTick } from 'vue'
 import { useEditorStore } from '@/stores/editor'
-import { BLOCK_TYPES } from '@/constants/blocks'
+import { BLOCK_CONFIG } from '@/constants/blockConfig'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import type { Block, BlockType, BlockContent } from '@/types/blocks'
-import TextBlock from '@/components/content/TextBlock.vue'
-import HeadingBlock from '@/components/content/HeadingBlock.vue'
-import ImageBlock from '@/components/content/ImageBlock.vue'
-import ColumnsBlock from '@/components/layout/ColumnsBlock.vue'
-import SpecificationsBlock from '@/components/content/SpecificationsBlock.vue'
-import ProsConsBlock from '@/components/content/ProsConsBlock.vue'
-import ListBlock from '@/components/content/ListBlock.vue'
-import TableBlock from '@/components/content/TableBlock.vue'
-import BlockMenu from '@/components/shared/BlockMenu.vue'
-import type { Component } from 'vue'
+import { componentMap } from '@/constants/blocks'
 
 const store = useEditorStore()
 const { onDragOver, onDragLeave, onDrop } = useDragAndDrop()
 
 const blocks = computed(() => store.blocks)
 
-const componentMap: Record<BlockType, Component> = {
-  'Text': TextBlock,
-  'Heading': HeadingBlock,
-  'Image': ImageBlock,
-  'Columns': ColumnsBlock,
-  'List': ListBlock,
-  'Table': TableBlock,
-  'Specifications': SpecificationsBlock,
-  'ProsCons': ProsConsBlock
-}
-
-const getComponentName = (type: BlockType): Component => {
-  return componentMap[type] || null
-}
-
 const updateBlockContent = async (index: number, content: BlockContent) => {  
   const updatedBlock: Block = {
     ...blocks.value[index],
-    content: typeof content === 'object' ? { ...content } : content
+    content: typeof content === 'object' ? structuredClone(content) : content
   }
   
   store.updateBlock({ index, block: updatedBlock })
@@ -61,66 +38,9 @@ const updateBlockContent = async (index: number, content: BlockContent) => {
 }
 
 const duplicateBlock = (index: number) => {
-  const block = { ...blocks.value[index] }
-  if (typeof block.content === 'object') {
-    block.content = { ...block.content }
-  }
-  
-  store.addBlock({
-    ...block,
-    id: Date.now()
-  })
-}
-
-const getDefaultContent = (type: BlockType): BlockContent => {
-  switch (type) {
-    case BLOCK_TYPES.TEXT:
-      return ''
-    case BLOCK_TYPES.HEADING:
-      return {
-        text: '',
-        alignment: 'left',
-        color: '#1F2937',
-        level: 1
-      }
-    case BLOCK_TYPES.IMAGE:
-      return {
-        url: '',
-        caption: ''
-      }
-    case BLOCK_TYPES.TWO_COLUMNS:
-      return {
-        columns: [[], []]
-      }
-    case BLOCK_TYPES.SPECIFICATIONS:
-      return {
-        rows: [
-          { key: '', value: '' },
-          { key: '', value: '' }
-        ]
-      }
-    case BLOCK_TYPES.PROS_CONS:
-      return {
-        pros: '',
-        cons: ''
-      }
-    case BLOCK_TYPES.LIST:
-      return {
-        items: [
-          { text: '' },
-          { text: '' }
-        ]
-      }
-    case BLOCK_TYPES.TABLE:
-      return {
-        data: [
-          ['', ''],
-          ['', '']
-        ]
-      }
-    default:
-      return ''
-  }
+  const block = structuredClone(blocks.value[index])
+  block.id = Date.now()
+  store.addBlock(block)
 }
 
 const getComponentProps = (block: Block, index: number) => ({

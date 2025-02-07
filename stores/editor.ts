@@ -1,104 +1,65 @@
 import { defineStore } from 'pinia'
-import { useFirebase } from '@/composables/useFirebase'
-import type { Block, BlockConfig } from '@/types/blocks'
+import type { Block, BlockConfig, BlockContent, BlockType } from '@/types/blocks'
 import type { Page } from '@/types/page'
 import { firebaseService } from '@/services/firebase'
-import { toRaw } from 'vue'
 
 interface EditorState {
   blocks: Block[]
-  nextId: number
   blockConfigs: Record<string, BlockConfig>
   savedPages: Page[]
   currentPage: Page | null
 }
 
 export const useEditorStore = defineStore('editor', {
-  state: () => ({
-    blocks: [] as Block[],
-    nextId: 1,
+  state: (): EditorState => ({
+    blocks: [],
     blockConfigs: {
-      'Text': {
-        name: 'Текст',
-        icon: 'TextIcon'
-      },
-      'Heading': {
-        name: 'Заголовок',
-        icon: 'HeadingIcon'
-      },
-      'Image': {
-        name: 'Изображение',
-        icon: 'ImageIcon'
-      },
-      'Columns': {
-        name: 'Колонки',
-        icon: 'ColumnsIcon'
-      },
-      'List': {
-        name: 'Список',
-        icon: 'ListIcon'
-      },
-      'Table': {
-        name: 'Таблица',
-        icon: 'TableIcon'
-      },
-      'ProsCons': {
-        name: 'Плюсы и минусы',
-        icon: 'ProsConsIcon'
-      },
-      'Specifications': {
-        name: 'Спецификации',
-        icon: 'SpecificationsIcon'
-      }
-    } as Record<string, BlockConfig>,
-    savedPages: [] as Page[],
-    currentPage: null as Page | null
+      Text: { name: 'Текст', icon: 'TextIcon' },
+      Heading: { name: 'Заголовок', icon: 'HeadingIcon' },
+      Image: { name: 'Изображение', icon: 'ImageIcon' },
+      Columns: { name: 'Колонки', icon: 'ColumnsIcon' },
+      List: { name: 'Список', icon: 'ListIcon' },
+      Table: { name: 'Таблица', icon: 'TableIcon' },
+      ProsCons: { name: 'Плюсы и минусы', icon: 'ProsConsIcon' },
+      Specifications: { name: 'Спецификации', icon: 'SpecificationsIcon' }
+    },
+    savedPages: [],
+    currentPage: null
   }),
 
   getters: {
-    getBlockConfig: (state) => {
-      return (type: string) => state.blockConfigs[type]
-    },
+    getBlockConfig: (state) => (type: string) => state.blockConfigs[type],
     getBlocks: (state) => state.blocks
   },
 
   actions: {
-    addBlock(block: Block) {
-      const newBlock = {
-        id: this.nextId++,
-        type: block.type || 'defaultType',
-        content: block.content || {},
-      }
-
-      if (block.type === 'Heading' && !block.content) {
-        newBlock.content = {
-          text: '',
-          level: 1,
-          alignment: 'left',
-          color: '#1F2937'
-        }
-      }
-
-      this.blocks.push(newBlock)
+    getNextId(): number {
+      return this.blocks.reduce((max, block) => Math.max(max, block.id ?? 0), 0) + 1
     },
 
-    updateBlock({ index, block }: { index: number, block: Block }) {
-      if (index < 0 || index >= this.blocks.length) {
-        console.error('Invalid index for update:', index)
-        return
-      }
-      
-      const updatedBlock = {
-        id: block.id || '',
+    addBlock(block: Block) {
+      const defaultContent: Record<string, any> = {
+        Heading: { text: '', level: 1, alignment: 'left', color: '#1F2937' },
+        Image: { url: '', caption: '' },
+        Columns: { columns: [[], []] }, 
+        List: { items: [] },
+        Table: { rows: [[]] },
+        ProsCons: { pros: [], cons: [] },
+        Specifications: { specs: [] }
+      };
+    
+      this.blocks.push({
+        id: this.getNextId(),
         type: block.type || 'defaultType',
-        content: block.content || {}
-      }
-      
-      this.blocks = [
-        ...this.blocks.slice(0, index),
-        updatedBlock,
-        ...this.blocks.slice(index + 1)
-      ]
+        content: block.content ?? defaultContent[block.type] ?? '',
+        parentId: block.parentId ?? ''
+      });
+    },
+    
+
+    updateBlock({ index, block }: { index: number, block: Block }) {
+      if (index < 0 || index >= this.blocks.length) return console.error('Invalid index for update:', index)
+      this.blocks[index] = { ...block }
     },
 
     insertBlock({ index, block }: { index: number, block: Block }) {
@@ -106,14 +67,9 @@ export const useEditorStore = defineStore('editor', {
     },
 
     moveBlock(fromIndex: number, toIndex: number) {
-      if (fromIndex === toIndex) return
-      
+      if (fromIndex === toIndex || toIndex < 0 || toIndex >= this.blocks.length) return
       const [movedBlock] = this.blocks.splice(fromIndex, 1)
-      if (movedBlock) {
-        this.blocks.splice(toIndex, 0, movedBlock)
-      } else {
-        console.error('Block not found at index:', fromIndex)
-      }
+      this.blocks.splice(toIndex, 0, movedBlock)
     },
 
     removeBlock(index: number) {
@@ -124,99 +80,113 @@ export const useEditorStore = defineStore('editor', {
       this.blocks = blocks
     },
 
-    updateColumnsBlock({ index, columnIndex, block }: { 
-      index: number, 
-      columnIndex: number, 
-      block: Block 
-    }) {
+    updateColumnsBlock({ index, columnIndex, block }: { index: number, columnIndex: number, block: Block }) {
       const columnsBlock = this.blocks[index]
-
-      if (!columnsBlock || !columnsBlock.content) {
-        console.error('Invalid columns block:', index)
-        return
+    
+      if (!columnsBlock || !this.isColumnsContent(columnsBlock.content)) {
+        return console.error('Invalid columns block:', index)
       }
-
-      if (!columnsBlock.content.columns) {
-        columnsBlock.content.columns = [[], []]
-      }
-
+    
       if (columnIndex < 0 || columnIndex >= columnsBlock.content.columns.length) {
-        console.error('Invalid column index:', columnIndex)
-        return
+        return console.error('Invalid column index:', columnIndex)
       }
-
+    
       columnsBlock.content.columns[columnIndex].push(block)
     },
+    
+    isColumnsContent(content: any): content is { columns: Block[][] } {
+      return content && typeof content === 'object' && 'columns' in content && Array.isArray(content.columns)
+    },
+    
 
     async loadSavedPages() {
       try {
-        this.savedPages = await firebaseService.getPages()
+        const pages = await firebaseService.getPages();
+        console.log("Fetched pages:", pages);
+    
+        this.savedPages = pages.map(page => ({
+          ...page,
+          createdAt: Number(page.createdAt),
+          updatedAt: page.updatedAt ? Number(page.updatedAt) : Date.now(),
+          blocks: page.blocks.map(block => ({
+            id: block.id ?? this.getNextId(),
+            type: block.type as BlockType,
+            content: block.content as BlockContent,
+            parentId: block.parentId ?? ''
+          }))
+        }));
       } catch (error) {
-        console.error('Error loading saved pages:', error)
+        console.error('Error loading saved pages:', error);
       }
     },
-
+    
     async loadPage(pageId: string) {
       try {
-        const page = await firebaseService.getPage(pageId)
+        const page = await firebaseService.getPage(pageId);
         if (page) {
-          this.currentPage = page
-          this.blocks = page.blocks || []
+          this.currentPage = {
+            ...page,
+            createdAt: Number(page.createdAt),
+            updatedAt: page.updatedAt ? Number(page.updatedAt) : Date.now(),
+            blocks: page.blocks.map(block => ({
+              id: block.id ?? this.getNextId(),
+              type: block.type as BlockType,
+              content: block.content as BlockContent,
+              parentId: block.parentId ?? ''
+            }))
+          };
+          this.blocks = this.currentPage.blocks;
         }
-        return page
+        return page;
       } catch (error) {
-        console.error('Error loading page:', error)
-        return null
+        console.error('Error loading page:', error);
+        return null;
       }
     },
 
     clearEditor() {
       this.blocks = []
-      this.nextId = 1
       this.currentPage = null
     },
 
-    async savePage(pageData: Partial<Page>) {
+    preparePageData(pageData?: Partial<Page>) {
+      return {
+        ...(pageData || {}),
+        blocks: this.blocks.map(({ id, type, content, parentId }) => ({ id, type, content, parentId }))
+      }
+    },
+
+    async savePage(pageData?: Partial<Page>) {
+      console.log('Данные перед сохранением в Firebase:', pageData)
       try {
-        const pageToSave = {
-          ...pageData,
-          blocks: this.blocks.map(block => ({
-            id: block.id || '',
-            type: block.type || 'defaultType',
-            content: block.content || {},
-            parentId: block.parentId || ''
-          }))
-        }
+        const pageToSave = this.preparePageData(pageData);
 
-        let savedPageId: string
-
-        // Пытаемся обновить существующую страницу
+        console.log('После preparePageData:', pageToSave);
+    
+        pageToSave.blocks = pageToSave.blocks.map(block => ({
+          id: block.id !== undefined ? block.id : this.getNextId(),
+          type: block.type as BlockType,
+          content: block.content ?? '',
+          parentId: block.parentId ?? ''
+        })) as Block[];
+    
+        let savedPageId: string;
+    
         if (this.currentPage?.id) {
-          try {
-            savedPageId = await firebaseService.updatePage(this.currentPage.id, pageToSave)
-          } catch (updateError) {
-            console.log('Failed to update, saving as new page')
-            savedPageId = await firebaseService.savePage(pageToSave as Page)
-            this.currentPage = null
-          }
+          pageToSave.updatedAt = Date.now();
+          savedPageId = await firebaseService.updatePage(this.currentPage.id, pageToSave);
         } else {
-          // Сохраняем как новую страницу
-          savedPageId = await firebaseService.savePage(pageToSave as Page)
+          pageToSave.id = crypto.randomUUID();
+          pageToSave.createdAt = Date.now();
+          pageToSave.updatedAt = Date.now();
+          savedPageId = await firebaseService.savePage(pageToSave as Page);
         }
-
-        // Загружаем обновленный список страниц
-        await this.loadSavedPages()
-
-        // Загружаем только что сохраненную страницу
-        const savedPage = await firebaseService.getPage(savedPageId)
-        if (savedPage) {
-          this.currentPage = savedPage
-          this.blocks = savedPage.blocks
-        }
-
+    
+        await this.loadSavedPages();
+        return savedPageId;
       } catch (error) {
-        console.error('Error saving page:', error)
-        throw error
+        console.error('Error saving page:', error);
+        throw error;
       }
     },
 
@@ -230,4 +200,4 @@ export const useEditorStore = defineStore('editor', {
       }
     }
   }
-}) 
+})

@@ -22,7 +22,7 @@ export type BlockType =
   | 'ProsCons'
 
 export interface Block {
-  id?: number
+  id: number
   type: BlockType
   content: BlockContent
   parentId: string
@@ -56,7 +56,7 @@ export type BlockContent =
   | SpecificationsContent 
   | ProsConsContent 
   | ListContent 
-  | TableContent 
+  | TableContent
 
 export interface BlockLibraryItem {
   type: BlockType

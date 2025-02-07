@@ -1,12 +1,12 @@
 import type { Block } from "./blocks"
 
 export interface Page {
-  id: string
-  title: string
-  slug: string
-  blocks: Block[]
-  createdAt: string
-  updatedAt: string
+  id: string;
+  title: string;
+  slug: string;
+  blocks: Block[];
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface PageData {

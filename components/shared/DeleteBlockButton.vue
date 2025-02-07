@@ -15,7 +15,6 @@ const emit = defineEmits<{
 }>()
 
 const handleDelete = () => {
-  console.log('Delete button clicked')
   emit('delete')
 }
 </script>

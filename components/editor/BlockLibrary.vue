@@ -50,7 +50,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useEditorStore } from '@/stores/editor'
-import { BLOCK_TYPES, getBlockConfig } from '@/constants/blocks'
+import { getBlockConfig } from '@/constants/blocks'
+import { BLOCK_TYPES } from '@/constants/blockTypes'
 import BlockLibraryItem from './BlockLibraryItem.vue'
 import type { BlockType, Block } from '@/types/blocks'
 
@@ -103,7 +104,8 @@ const addBlock = (type: BlockType) => {
   const block: Block = {
     type,
     content: getDefaultContent(type),
-    parentId: ''
+    parentId: '',
+    id: Date.now()
   }
   store.addBlock(block)
 }

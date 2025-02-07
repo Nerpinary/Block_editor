@@ -33,7 +33,7 @@
 
       <div class="mt-6 flex justify-end space-x-3">
         <button 
-          @click="handleClose"
+          @click="closeDialog"
           class="btn btn-secondary"
         >
           Отмена
@@ -50,13 +50,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { PageData } from '@/types/page'
 
-const emit = defineEmits<{
-  close: []
-  saved: [data: PageData]
-}>()
+const props = defineProps<{ modelValue: boolean }>()
+const emit = defineEmits(['update:modelValue', 'save'])
 
 const title = ref('')
 const slug = ref('')
@@ -81,8 +79,8 @@ const generateSlug = () => {
     .replace(/^-+|-+$/g, '')
 }
 
-const handleClose = () => {
-  emit('close')
+const closeDialog = () => {
+  emit('update:modelValue', false)
 }
 
 const handleSave = async () => {  
@@ -93,14 +91,17 @@ const handleSave = async () => {
 
   try {
     const pageData: PageData = {
+      id: Date.now(),
       title: title.value.trim(),
       slug: slug.value.trim()
     }
 
-    emit('saved', pageData)
-    emit('close')
+    console.log('Сохранение страницы:', pageData)
+
+    emit('save', pageData)
+    closeDialog()
   } catch (error) {
-    console.error('Error saving page:', error)
+    console.error('Ошибка при сохранении:', error)
     alert('Ошибка при сохранении')
   }
 }
@@ -122,4 +123,4 @@ const handleSave = async () => {
     @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
   }
 }
-</style> 
+</style>

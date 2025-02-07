@@ -37,7 +37,6 @@
 import { ref, watch, onMounted, nextTick } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { useBlockActions } from '@/composables/useBlockActions'
-import { BLOCK_TYPES } from '@/constants/blocks'
 import type { ColumnsContent } from '@/types/content'
 import type { Block, BlockType } from '@/types/blocks'
 import type { DropEvent, DropData } from '@/types/drop'
@@ -149,10 +148,11 @@ const removeBlockFromColumn = (columnIndex: number, blockIndex: number) => {
 const updateStore = () => {
   const updatedBlock: Block = {
     type: 'Columns',
-    content: { 
+    content: {
       columns: Array.isArray(localColumns.value) ? JSON.parse(JSON.stringify(localColumns.value)) : [[], []]
     },
-    parentId: ''
+    parentId: '',
+    id: Date.now()
   }
 
   store.updateBlock({
