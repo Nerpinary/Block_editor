@@ -242,7 +242,6 @@ const onDragStart = (event: DragEvent) => {
     const jsonData = JSON.stringify(blockData)
     event.dataTransfer.setData('application/json', jsonData)
     startDrag(event, blockData)
-    console.log('Drag data set:', blockData)
   } catch (error) {
     console.error('Error setting drag data:', error)
   }

@@ -18,17 +18,14 @@ export function useBlockActions({ index, parentId, emit }: BlockActionsProps) {
   const store = useEditorStore()
 
   const handleDelete = () => {
-    console.log('Deleting block at index:', index)
     emit('remove')
   }
 
   const handleDuplicate = () => {
-    console.log('Duplicating block at index:', index)
     emit('duplicate')
   }
 
   const handleMove = (direction: 'up' | 'down') => {
-    console.log('Moving block:', { direction, index, parentId })
     emit('move', {
       direction,
       index,

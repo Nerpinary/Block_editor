@@ -110,7 +110,6 @@ const handleDrop = (event: DragEvent) => {
 
   try {
     const jsonData = event.dataTransfer.getData('application/json')
-    console.log('Received data:', jsonData)
     
     if (!jsonData) {
       console.warn('No data received in drop event')

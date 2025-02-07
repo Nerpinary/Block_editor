@@ -50,15 +50,12 @@ const getComponentName = (type: BlockType): Component => {
   return componentMap[type] || null
 }
 
-const updateBlockContent = async (index: number, content: BlockContent) => {
-  console.log('EditorContent updating block:', { index, content })
-  
+const updateBlockContent = async (index: number, content: BlockContent) => {  
   const updatedBlock: Block = {
     ...blocks.value[index],
     content: typeof content === 'object' ? { ...content } : content
   }
   
-  console.log('EditorContent sending to store:', updatedBlock)
   store.updateBlock({ index, block: updatedBlock })
   await nextTick()
 }

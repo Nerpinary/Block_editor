@@ -82,13 +82,10 @@ const generateSlug = () => {
 }
 
 const handleClose = () => {
-  console.log('Closing save dialog')
   emit('close')
 }
 
-const handleSave = async () => {
-  console.log('Attempting to save page')
-  
+const handleSave = async () => {  
   if (!title.value.trim() || !slug.value.trim()) {
     alert('Пожалуйста, заполните все поля')
     return
@@ -100,7 +97,6 @@ const handleSave = async () => {
       slug: slug.value.trim()
     }
 
-    console.log('Saving page data:', pageData)
     emit('saved', pageData)
     emit('close')
   } catch (error) {

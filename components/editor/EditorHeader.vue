@@ -1,20 +1,22 @@
 <template>
   <div class="h-14 border-b bg-white px-4 flex items-center justify-between">
     <h1 class="text-lg font-medium text-gray-900">{{ title }}</h1>
-    <div class="flex gap-2">
+    <div class="flex gap-3">
       <button 
         v-for="action in actions" 
         :key="action.name" 
         @click="handleAction(action.event)"
-        class="btn btn-primary"
+        class="btn btn-icon"
+        :title="action.name"
       >
-        {{ action.name }}
+        <EyeIcon :size="6" />
       </button>
       <button 
         @click="handleSave"
-        class="btn btn-primary"
+        class="btn btn-icon"
+        title="Сохранить"
       >
-        Сохранить
+        <SaveIcon :size="6" />
       </button>
       <button 
         @click="router.push('/saved-pages')"
@@ -38,6 +40,9 @@ import { useRouter } from 'vue-router'
 import type { PageData } from '@/types/page'
 import type { EditorAction } from '@/types/editor'
 import SavePageDialog from './SavePageDialog.vue'
+import { useEditorStore } from '@/stores/editor'
+import SaveIcon from '../icons/SaveIcon.vue'
+import EyeIcon from '../icons/EyeIcon.vue'
 
 interface Props {
   title?: string
@@ -65,6 +70,7 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const showSaveDialog = ref(false)
+const editorStore = useEditorStore()
 
 const handleAction = (event: string) => {
   try {
@@ -97,18 +103,43 @@ const onPageSaved = (data: PageData) => {
     console.error('Error handling page save:', error)
   }
 }
+
+const handleNewPage = () => {
+  editorStore.clearEditor()
+}
 </script>
 
 <style lang="scss" scoped>
 .btn {
-  @apply px-4 py-2 rounded-lg transition-colors;
+  @apply transition-colors;
 
   &-primary {
     @apply bg-blue-500 text-white hover:bg-blue-600;
   }
 
   &-secondary {
+    @apply px-4 py-2 rounded-lg;
     @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
+  }
+
+  &-icon {
+    @apply w-11 h-11;
+    @apply rounded-lg;
+    @apply text-gray-700 hover:bg-gray-100;
+    @apply flex items-center justify-center;
+    
+    svg {
+      @apply transition-colors;
+    }
+    
+    &:hover {
+      @apply bg-gray-100;
+      
+      svg {
+        @apply text-blue-500 scale-110;
+        transform-origin: center;
+      }
+    }
   }
 }
 </style>

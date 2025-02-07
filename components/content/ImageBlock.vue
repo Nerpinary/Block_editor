@@ -108,7 +108,6 @@ const handleFileChange = (event: Event) => {
         caption: imageContent.value.caption || ''
       }
 
-      console.log('Image block emitting new file:', newContent)
       emit('update:content', { content: newContent })
 
       if (input) input.value = ''
@@ -129,7 +128,6 @@ const updateCaption = (event: Event) => {
     url: imageContent.value.url,
     caption: input.value
   }
-  console.log('Image block emitting caption update:', updatedContent)
   emit('update:content', { content: updatedContent })
 }
 

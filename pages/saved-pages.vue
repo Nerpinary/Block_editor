@@ -4,12 +4,23 @@
       <h1 class="text-lg font-medium text-gray-900">
         Сохраненные страницы
       </h1>
-      <button
-        @click="router.push('/')"
-        class="create-button"
-      >
-        Создать новую
-      </button>
+      <div class="flex gap-3">
+        <button
+          v-if="hasUnsavedChanges"
+          @click="returnToEdit"
+          class="btn btn-icon"
+          title="Вернуться к редактированию"
+        >
+          <ReturnIcon :size="6" />
+        </button>
+        
+        <button
+          @click="createNewPage"
+          class="create-button"
+        >
+          Создать новую
+        </button>
+      </div>
     </header>
 
     <main class="max-w-4xl mx-auto p-8">
@@ -75,6 +86,7 @@ import { useRouter } from 'vue-router'
 import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import type { Page } from '@/types/page'
+import ReturnIcon from '@/components/icons/ReturnIcon.vue'
 
 const store = useEditorStore()
 const router = useRouter()
@@ -83,6 +95,7 @@ const showDeleteConfirm = ref(false)
 const pageToDelete = ref<Page | null>(null)
 
 const savedPages = computed<Page[]>(() => store.savedPages)
+const hasUnsavedChanges = computed(() => store.blocks.length > 0)
 
 const formatDate = (date: string | number): string => {
   return new Date(date).toLocaleDateString()
@@ -118,6 +131,15 @@ const deletePage = async () => {
     console.error('Error deleting page:', error)
     alert('Ошибка при удалении страницы')
   }
+}
+
+const createNewPage = () => {
+  store.clearEditor()
+  router.push('/')
+}
+
+const returnToEdit = () => {
+  router.push('/')
 }
 
 onMounted(() => {
@@ -180,5 +202,26 @@ export default {
 
 .empty-state {
   @apply text-center py-12 text-gray-500;
+}
+
+.btn-icon {
+  @apply w-11 h-11;
+  @apply rounded-lg;
+  @apply text-gray-700 hover:bg-gray-100;
+  @apply flex items-center justify-center;
+  @apply transition-all duration-200;
+    
+  svg {
+    @apply transition-transform duration-200;
+  }
+    
+  &:hover {
+    @apply bg-gray-100 text-blue-500;
+      
+    svg {
+      @apply scale-110;
+      transform-origin: center;
+    }
+  }
 }
 </style> 

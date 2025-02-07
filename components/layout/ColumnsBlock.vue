@@ -101,9 +101,6 @@ const handleDropIntoColumn = (event: DropEvent, columnIndex: number) => {
       content: dropData.originalBlock?.content || dropData.content,
       parentId: ''
     }
-    
-    console.log('Drop data:', dropData)
-    console.log('Block to add:', blockToAdd)
 
     if (dropData.content && 'content' in dropData.content) {
       blockToAdd.content = dropData.content.content
@@ -128,15 +125,13 @@ const parseColumnSource = (source: string): [number, number] => {
   return match ? [parseInt(match[1]), parseInt(match[2])] : [0, 0]
 }
 
-const updateBlockContent = (columnIndex: number, blockIndex: number, newContent: any) => {
-  console.log('Updating block content:', newContent)
-  
+const updateBlockContent = (columnIndex: number, blockIndex: number, newContent: any) => {  
   const newColumns = localColumns.value.map(column => [...column])
 
   if (newColumns[columnIndex][blockIndex]) {
     newColumns[columnIndex][blockIndex] = {
       ...newColumns[columnIndex][blockIndex],
-      content: newContent.content || newContent
+      content: typeof newContent === 'string' ? JSON.parse(newContent) : newContent.content || newContent
     }
 
     localColumns.value = newColumns
@@ -155,7 +150,7 @@ const updateStore = () => {
   const updatedBlock: Block = {
     type: 'Columns',
     content: { 
-      columns: JSON.parse(JSON.stringify(localColumns.value))
+      columns: Array.isArray(localColumns.value) ? JSON.parse(JSON.stringify(localColumns.value)) : [[], []]
     },
     parentId: ''
   }

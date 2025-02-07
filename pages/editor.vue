@@ -57,7 +57,6 @@ interface AddBlockParams {
 }
 
 const addBlock = (block: AddBlockParams) => {
-  console.log('Adding block:', block)
   const newBlock: Block = {
     id: Date.now(),
     type: block.type,
@@ -70,15 +69,11 @@ const addBlock = (block: AddBlockParams) => {
 const updateBlockContent = ({ index, content }: { index: number; content: string | object }) => {
   const currentBlock = blocks.value[index]
   
-  console.log('Current block:', currentBlock)
-  console.log('Incoming content:', content)
-  
   const updatedBlock = {
     ...currentBlock,
     content
   }
   
-  console.log('Updated block before store:', updatedBlock)
   store.updateBlock({ index, block: updatedBlock as Block })
 }
 
@@ -114,7 +109,6 @@ const handlePreview = () => {
     content: toRaw(block.content)
   }))
   
-  console.log('Raw blocks for preview:', rawBlocks)
   localStorage.setItem('temp_blocks', JSON.stringify(rawBlocks))
   router.push('/preview')
 }
@@ -122,7 +116,6 @@ const handlePreview = () => {
 onMounted(() => {
   if (route.query.from === 'preview') {
     const tempBlocks = localStorage.getItem('temp_blocks')
-    console.log('Loading blocks from preview:', tempBlocks)
     if (tempBlocks) {
       try {
         const blocks = JSON.parse(tempBlocks)

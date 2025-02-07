@@ -14,8 +14,8 @@ interface EditorState {
 }
 
 export const useEditorStore = defineStore('editor', {
-  state: (): EditorState => ({
-    blocks: [],
+  state: () => ({
+    blocks: [] as Block[],
     nextId: 1,
     blockConfigs: {
       'Text': {
@@ -51,8 +51,8 @@ export const useEditorStore = defineStore('editor', {
         icon: 'SpecificationsIcon'
       }
     } as Record<string, BlockConfig>,
-    savedPages: [],
-    currentPage: null
+    savedPages: [] as Page[],
+    currentPage: null as Page | null
   }),
 
   getters: {
@@ -66,7 +66,8 @@ export const useEditorStore = defineStore('editor', {
     addBlock(block: Block) {
       const newBlock = {
         id: this.nextId++,
-        ...block
+        type: block.type || 'defaultType',
+        content: block.content || {},
       }
 
       if (block.type === 'Heading' && !block.content) {
@@ -87,12 +88,10 @@ export const useEditorStore = defineStore('editor', {
         return
       }
       
-      console.log('Block before update:', toRaw(this.blocks[index]))
-      
       const updatedBlock = {
-        id: block.id,
-        type: block.type,
-        content: block.content
+        id: block.id || '',
+        type: block.type || 'defaultType',
+        content: block.content || {}
       }
       
       this.blocks = [
@@ -100,17 +99,13 @@ export const useEditorStore = defineStore('editor', {
         updatedBlock,
         ...this.blocks.slice(index + 1)
       ]
-      
-      console.log('Block after update:', toRaw(this.blocks[index]))
     },
 
     insertBlock({ index, block }: { index: number, block: Block }) {
-      console.log('Inserting block:', { index, block })
       this.blocks.splice(index, 0, block)
     },
 
     moveBlock(fromIndex: number, toIndex: number) {
-      console.log('Moving block:', { fromIndex, toIndex })
       if (fromIndex === toIndex) return
       
       const [movedBlock] = this.blocks.splice(fromIndex, 1)
@@ -166,7 +161,7 @@ export const useEditorStore = defineStore('editor', {
         const page = await firebaseService.getPage(pageId)
         if (page) {
           this.currentPage = page
-          this.blocks = page.blocks
+          this.blocks = page.blocks || []
         }
         return page
       } catch (error) {
@@ -175,20 +170,50 @@ export const useEditorStore = defineStore('editor', {
       }
     },
 
+    clearEditor() {
+      this.blocks = []
+      this.nextId = 1
+      this.currentPage = null
+    },
+
     async savePage(pageData: Partial<Page>) {
       try {
-        if (this.currentPage?.id) {
-          await firebaseService.updatePage(this.currentPage.id, {
-            ...pageData,
-            blocks: this.blocks
-          })
-        } else {
-          await firebaseService.savePage({
-            ...pageData,
-            blocks: this.blocks
-          } as Page)
+        const pageToSave = {
+          ...pageData,
+          blocks: this.blocks.map(block => ({
+            id: block.id || '',
+            type: block.type || 'defaultType',
+            content: block.content || {},
+            parentId: block.parentId || ''
+          }))
         }
+
+        let savedPageId: string
+
+        // Пытаемся обновить существующую страницу
+        if (this.currentPage?.id) {
+          try {
+            savedPageId = await firebaseService.updatePage(this.currentPage.id, pageToSave)
+          } catch (updateError) {
+            console.log('Failed to update, saving as new page')
+            savedPageId = await firebaseService.savePage(pageToSave as Page)
+            this.currentPage = null
+          }
+        } else {
+          // Сохраняем как новую страницу
+          savedPageId = await firebaseService.savePage(pageToSave as Page)
+        }
+
+        // Загружаем обновленный список страниц
         await this.loadSavedPages()
+
+        // Загружаем только что сохраненную страницу
+        const savedPage = await firebaseService.getPage(savedPageId)
+        if (savedPage) {
+          this.currentPage = savedPage
+          this.blocks = savedPage.blocks
+        }
+
       } catch (error) {
         console.error('Error saving page:', error)
         throw error

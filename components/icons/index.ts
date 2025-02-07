@@ -13,7 +13,10 @@ import DuplicateIcon from './DuplicateIcon.vue'
 import DotsVerticalIcon from './DotsVerticalIcon.vue'
 import ThumbUpIcon from './ThumbUpIcon.vue'
 import ThumbDownIcon from './ThumbDownIcon.vue'
-
+import EyeIcon from './EyeIcon.vue'
+import SaveIcon from './SaveIcon.vue'
+import ListIcon from './ListIcon.vue'
+import ReturnIcon from './ReturnIcon.vue'
 export type IconComponent = typeof BaseIcon
 
 export const Icons = {
@@ -30,7 +33,11 @@ export const Icons = {
   DuplicateIcon,
   DotsVerticalIcon,
   ThumbUpIcon,
-  ThumbDownIcon
+  ThumbDownIcon,
+  EyeIcon,
+  SaveIcon,
+  ListIcon,
+  ReturnIcon
 } as const
 
 export {
@@ -47,7 +54,11 @@ export {
   DuplicateIcon,
   DotsVerticalIcon,
   ThumbUpIcon,
-  ThumbDownIcon
+  ThumbDownIcon,
+  EyeIcon,
+  SaveIcon,
+  ListIcon,
+  ReturnIcon
 }
 
 export default Icons 

@@ -6,9 +6,10 @@
       </h1>
       <button
         @click="goBack"
-        class="preview-button"
+        class="btn btn-icon"
+        title="Вернуться к редактированию"
       >
-        Вернуться к редактированию
+        <ReturnIcon :size="6" />
       </button>
     </header>
 
@@ -43,13 +44,13 @@ import {
   PreviewTableBlock
 } from '@/components/preview'
 import type { Block, BlockContent } from '@/types/blocks'
+import ReturnIcon from '@/components/icons/ReturnIcon.vue'
 
 const store = useEditorStore()
 const route = useRoute()
 const router = useRouter()
 
 const blocks = computed<Block[]>(() => {
-  console.log('Preview blocks computed:', store.blocks)
   return store.blocks
 })
 
@@ -94,11 +95,9 @@ const goBack = () => {
 
 onMounted(() => {
   const tempBlocks = localStorage.getItem('temp_blocks')
-  console.log('Loaded blocks in preview:', tempBlocks)
   if (tempBlocks) {
     try {
       const blocks = JSON.parse(tempBlocks)
-      console.log('Parsed blocks:', blocks)
       const validBlocks = blocks.map((block: Block) => {
         if (block.type === 'Heading' && !block.content) {
           block.content = {
@@ -147,6 +146,27 @@ export default {
     @apply bg-blue-500 text-white;
     @apply hover:bg-blue-600;
     @apply transition-colors duration-200;
+  }
+}
+
+.btn-icon {
+  @apply w-11 h-11;
+  @apply rounded-lg;
+  @apply text-gray-700 hover:bg-gray-100;
+  @apply flex items-center justify-center;
+  @apply transition-all duration-200;
+    
+  svg {
+    @apply transition-transform duration-200;
+  }
+    
+  &:hover {
+    @apply bg-gray-100 text-blue-500;
+      
+    svg {
+      @apply scale-110;
+      transform-origin: center;
+    }
   }
 }
 </style>
