@@ -1,5 +1,6 @@
 <template>
-  <div class="saved-pages min-h-screen bg-gray-50">
+  <LoadingCubes v-if="isLoading" />
+  <div v-else class="saved-pages min-h-screen bg-gray-50">
     <header class="saved-pages__header">
       <h1 class="text-lg font-medium text-gray-900">
         Сохраненные страницы
@@ -87,12 +88,14 @@ import DeleteBlockButton from '@/components/shared/DeleteBlockButton.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import type { Page } from '@/types/page'
 import ReturnIcon from '@/components/icons/ReturnIcon.vue'
+import LoadingCubes from '@/components/shared/LoadingCubes.vue'
 
 const store = useEditorStore()
 const router = useRouter()
 
 const showDeleteConfirm = ref(false)
 const pageToDelete = ref<Page | null>(null)
+const isLoading = ref(false)
 
 const savedPages = computed<Page[]>(() => store.savedPages)
 const hasUnsavedChanges = computed(() => store.blocks.length > 0)
@@ -125,12 +128,15 @@ const closeDeleteModal = () => {
 const deletePage = async () => {
   if (!pageToDelete.value) return
 
+  isLoading.value = true
   try {
     await store.deletePage(pageToDelete.value.id)
     closeDeleteModal()
   } catch (error) {
     console.error('Error deleting page:', error)
     alert('Ошибка при удалении страницы')
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -143,8 +149,15 @@ const returnToEdit = () => {
   router.push('/')
 }
 
-onMounted(() => {
-  store.loadSavedPages()
+onMounted(async () => {
+  isLoading.value = true
+  try {
+    await store.loadSavedPages()
+  } catch (error) {
+    console.error('Error loading pages:', error)
+  } finally {
+    isLoading.value = false
+  }
 })
 </script>
 

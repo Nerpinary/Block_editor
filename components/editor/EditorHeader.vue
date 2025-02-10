@@ -29,8 +29,15 @@
         v-if="showSaveDialog"
         v-model="showSaveDialog"
         @save="onPageSaved"
+        :showNotification="showNotification"
       />
     </div>
+    
+    <Notification 
+      v-model:show="notification.show"
+      :message="notification.message"
+      :type="notification.type"
+    />
   </div>
 </template>
 
@@ -40,10 +47,11 @@ import { useRouter } from 'vue-router'
 import type { PageData } from '@/types/page'
 import type { EditorAction } from '@/types/editor'
 import SavePageDialog from './SavePageDialog.vue'
+import Notification from '@/components/shared/Notification.vue'
 import { useEditorStore } from '@/stores/editor'
 import SaveIcon from '../icons/SaveIcon.vue'
 import EyeIcon from '../icons/EyeIcon.vue'
-
+import type { NotificationType } from '@/types/notification'
 interface Props {
   title?: string
   actions?: EditorAction[]
@@ -72,6 +80,24 @@ const router = useRouter()
 const showSaveDialog = ref(false)
 const editorStore = useEditorStore()
 
+const notification = ref<NotificationType>({
+  show: false,
+  message: '',
+  type: 'success'
+})
+
+const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+  notification.value = {
+    show: true,
+    message,
+    type
+  }
+  
+  setTimeout(() => {
+    notification.value.show = false
+  }, 3000)
+}
+
 const handleAction = (event: string) => {
   try {
     emit(event)
@@ -89,8 +115,12 @@ const handleSave = async () => {
         slug: props.pageSlug,
         blocks: editorStore.blocks
       });
+      
+      showNotification('Страница успешно сохранена')
+      
       emit('saved', { id: props.currentPageId, title: props.pageTitle, slug: props.pageSlug });
     } catch (error) {
+      showNotification('Ошибка при сохранении страницы', 'error')
       console.error('Error saving existing page:', error);
     }
   } else {

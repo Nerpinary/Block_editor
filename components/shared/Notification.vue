@@ -30,12 +30,12 @@
 </template>
 
 <script setup lang="ts">
-type NotificationType = 'success' | 'error' | 'warning' | 'info'
+import type { NotificationType } from '@/types/notification'
 
 interface Props {
   show: boolean
   message: string
-  type?: NotificationType
+  type?: NotificationType['type']
 }
 
 withDefaults(defineProps<Props>(), {

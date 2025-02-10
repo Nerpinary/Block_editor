@@ -106,7 +106,16 @@ const initializeContent = (content: string | SpecificationsContent): Specificati
 }
 
 const updateContent = () => {
-  emit('update:content', { content: { rows: localRows.value } })
+  const safeRows = localRows.value.map(row => ({
+    key: String(row.key),
+    value: String(row.value)
+  }));
+  
+  emit('update:content', { 
+    content: { 
+      rows: safeRows
+    } 
+  });
 }
 
 const addRow = () => {

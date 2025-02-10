@@ -101,6 +101,7 @@ export const useEditorStore = defineStore('editor', {
     
 
     async loadSavedPages() {
+      await new Promise(resolve => setTimeout(resolve, 1000))
       try {
         const pages = await firebaseService.getPages();
     

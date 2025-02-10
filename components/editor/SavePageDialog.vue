@@ -46,18 +46,37 @@
         </button>
       </div>
     </div>
+
+    <Notification 
+      v-model:show="notification.show"
+      :message="notification.message"
+      :type="notification.type"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { PageData } from '@/types/page'
+import Notification from '@/components/shared/Notification.vue'
+import type { NotificationType } from '@/types/notification'
 
-const props = defineProps<{ modelValue: boolean }>()
+const props = withDefaults(defineProps<{
+  modelValue: boolean
+  showNotification?: (message: string, type: 'success' | 'error') => void
+}>(), {
+  modelValue: false
+})
 const emit = defineEmits(['update:modelValue', 'save'])
 
 const title = ref('')
 const slug = ref('')
+
+const notification = ref<NotificationType>({
+  show: false,
+  message: '',
+  type: 'success'
+})
 
 const translitMap: Record<string, string> = {
   'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
@@ -85,7 +104,7 @@ const closeDialog = () => {
 
 const handleSave = async () => {  
   if (!title.value.trim() || !slug.value.trim()) {
-    alert('Пожалуйста, заполните все поля')
+    props.showNotification?.('Пожалуйста, заполните все поля', 'error')
     return
   }
 
@@ -97,10 +116,11 @@ const handleSave = async () => {
     }
 
     emit('save', pageData)
+    props.showNotification?.('Страница успешно сохранена', 'success')
     closeDialog()
   } catch (error) {
     console.error('Ошибка при сохранении:', error)
-    alert('Ошибка при сохранении')
+    props.showNotification?.('Ошибка при сохранении', 'error')
   }
 }
 </script>

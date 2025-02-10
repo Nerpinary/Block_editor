@@ -96,7 +96,14 @@ const localContent = ref<ProsConsContent>({
 })
 
 const updateContent = () => {
-  emit('update:content', { content: localContent.value })
+  const safeContent = {
+    pros: String(localContent.value.pros),
+    cons: String(localContent.value.cons)
+  };
+  
+  emit('update:content', { 
+    content: safeContent 
+  });
 }
 
 const onDragStart = (event: DragEvent) => {
