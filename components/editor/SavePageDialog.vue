@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import type { PageData } from '@/types/page'
 
 const props = defineProps<{ modelValue: boolean }>()
@@ -95,8 +95,6 @@ const handleSave = async () => {
       title: title.value.trim(),
       slug: slug.value.trim()
     }
-
-    console.log('Сохранение страницы:', pageData)
 
     emit('save', pageData)
     closeDialog()

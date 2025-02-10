@@ -1,4 +1,3 @@
-// Обновленный EditorContent.vue
 <template>
   <div class="editor-content max-w-4xl mx-auto p-8" @dragover="onDragOver" @drop="onDrop">
     <div v-for="(block, index) in blocks" :key="block.id" :data-index="index" class="editor-block mb-4"
@@ -17,9 +16,8 @@
 <script setup lang="ts">
 import { computed, nextTick } from 'vue'
 import { useEditorStore } from '@/stores/editor'
-import { BLOCK_CONFIG } from '@/constants/blockConfig'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
-import type { Block, BlockType, BlockContent } from '@/types/blocks'
+import type { Block, BlockContent } from '@/types/blocks'
 import { componentMap } from '@/constants/blocks'
 
 const store = useEditorStore()

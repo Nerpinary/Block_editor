@@ -81,20 +81,24 @@ const handleAction = (event: string) => {
 }
 
 const handleSave = async () => {
-  try {
-    if (props.currentPageId) {
-      await editorStore.savePage({ id: String(props.currentPageId) })
-    } else {
-      showSaveDialog.value = true
+  if (props.currentPageId) {
+    try {
+      await editorStore.savePage({
+        id: String(props.currentPageId),
+        title: props.pageTitle,
+        slug: props.pageSlug,
+        blocks: editorStore.blocks
+      });
+      emit('saved', { id: props.currentPageId, title: props.pageTitle, slug: props.pageSlug });
+    } catch (error) {
+      console.error('Error saving existing page:', error);
     }
-  } catch (error) {
-    console.error('Error handling save:', error)
+  } else {
+    showSaveDialog.value = true;
   }
 }
 
 const onPageSaved = async (data: PageData) => {
-  console.log('Сохранение страницы:', data)
-
   if (!data || !data.title) {
     console.error('Ошибка: title отсутствует в данных страницы', data)
     return

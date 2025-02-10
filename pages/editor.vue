@@ -19,7 +19,7 @@
     </div>
 
     <Notification 
-      v-model:show="showNotification"
+      :show="showNotification"
       :message="notificationMessage"
       type="success"
     />
@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, toRaw, watch } from 'vue'
+import { ref, computed, onMounted, toRaw, watch, nextTick } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import BlockLibrary from '@/components/editor/BlockLibrary.vue'
@@ -54,8 +54,10 @@ watch(
     if (newId) {
       await store.loadPage(newId as string)
       if (store.currentPage) {
+        currentPageId.value = store.currentPage.id
         pageTitle.value = store.currentPage.title
         pageSlug.value = store.currentPage.slug
+        await nextTick()
       }
     }
   },
@@ -89,6 +91,8 @@ const savePage = async (pageData: PageData) => {
       id: pageData.id ? String(pageData.id) : undefined
     }
     await store.savePage(pageToSave)
+    notificationMessage.value = 'Страница сохранена'
+    showNotification.value = true
     router.push('/saved-pages')
   } catch (error) {
     console.error('Error saving page:', error)

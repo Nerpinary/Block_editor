@@ -103,7 +103,8 @@ const formatDate = (date: string | number): string => {
 
 const editPage = async (page: Page) => {
   await store.loadPage(page.id)
-  router.push(`/?edit=${page.id}`)
+  console.log('Page ID:', page.id)
+  router.push(`/editor?edit=${page.id}`)
 }
 
 const previewPage = (page: Page) => {

@@ -113,10 +113,6 @@ const handleInput = (event: Event) => {
   const selection = window.getSelection()
   if (!selection) return
 
-  const range = selection.getRangeAt(0)
-  const start = range.startOffset
-  const end = range.endOffset
-
   const updatedContent: TextContent = {
     text: target.innerHTML,
     alignment: currentAlignment.value,
@@ -124,15 +120,6 @@ const handleInput = (event: Event) => {
   }
   
   emit('update:content', { content: updatedContent })
-
-  nextTick(() => {
-    if (!selection.anchorNode) return
-    const newRange = document.createRange()
-    newRange.setStart(selection.anchorNode, start)
-    newRange.setEnd(selection.anchorNode, end)
-    selection.removeAllRanges()
-    selection.addRange(newRange)
-  })
 }
 
 const formatText = (command: string) => {

@@ -95,7 +95,7 @@ const handleDropIntoColumn = (event: DropEvent, columnIndex: number) => {
     if (!isValidBlockType(dropData.type)) return
 
     const blockToAdd: Block = {
-      id: dropData.id || Date.now().toString(),
+      id: dropData.id,
       type: dropData.type as BlockType,
       content: dropData.originalBlock?.content || dropData.content,
       parentId: ''
@@ -152,7 +152,7 @@ const updateStore = () => {
       columns: Array.isArray(localColumns.value) ? JSON.parse(JSON.stringify(localColumns.value)) : [[], []]
     },
     parentId: '',
-    id: Date.now()
+    id: 0
   }
 
   store.updateBlock({

@@ -105,7 +105,7 @@ const addBlock = (type: BlockType) => {
     type,
     content: getDefaultContent(type),
     parentId: '',
-    id: Date.now()
+    id: 0
   }
   store.addBlock(block)
 }

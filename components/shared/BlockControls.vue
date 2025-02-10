@@ -88,6 +88,7 @@ const closeMenu = () => {
 }
 
 const toggleMenu = () => {
+  console.log('toggleMenu', isMenuOpen.value)
   isMenuOpen.value = !isMenuOpen.value
 }
 

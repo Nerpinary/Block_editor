@@ -212,7 +212,7 @@ const updateContent = () => {
     level: currentLevel.value
   }
   
-  emit('update:content', { content })
+  emit('update:content', { content: content })
 }
 
 const onDragStart = (event: DragEvent) => {

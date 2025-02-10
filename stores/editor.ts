@@ -34,6 +34,7 @@ export const useEditorStore = defineStore('editor', {
 
   actions: {
     getNextId(): number {
+      console.log('getNextId', this.blocks)
       return this.blocks.reduce((max, block) => Math.max(max, block.id ?? 0), 0) + 1
     },
 
@@ -102,12 +103,12 @@ export const useEditorStore = defineStore('editor', {
     async loadSavedPages() {
       try {
         const pages = await firebaseService.getPages();
-        console.log("Fetched pages:", pages);
     
         this.savedPages = pages.map(page => ({
           ...page,
           createdAt: Number(page.createdAt),
           updatedAt: page.updatedAt ? Number(page.updatedAt) : Date.now(),
+          id: page.id, 
           blocks: page.blocks.map(block => ({
             id: block.id ?? this.getNextId(),
             type: block.type as BlockType,
@@ -115,12 +116,14 @@ export const useEditorStore = defineStore('editor', {
             parentId: block.parentId ?? ''
           }))
         }));
+        console.log('Fetched pages:', this.savedPages);
       } catch (error) {
         console.error('Error loading saved pages:', error);
       }
     },
     
     async loadPage(pageId: string) {
+      console.log('Loading page with ID:', pageId);
       try {
         const page = await firebaseService.getPage(pageId);
         if (page) {
@@ -128,6 +131,7 @@ export const useEditorStore = defineStore('editor', {
             ...page,
             createdAt: Number(page.createdAt),
             updatedAt: page.updatedAt ? Number(page.updatedAt) : Date.now(),
+            id: page.id,
             blocks: page.blocks.map(block => ({
               id: block.id ?? this.getNextId(),
               type: block.type as BlockType,
@@ -136,6 +140,7 @@ export const useEditorStore = defineStore('editor', {
             }))
           };
           this.blocks = this.currentPage.blocks;
+          console.log('Loaded page:', this.currentPage);
         }
         return page;
       } catch (error) {
@@ -157,11 +162,8 @@ export const useEditorStore = defineStore('editor', {
     },
 
     async savePage(pageData?: Partial<Page>) {
-      console.log('Данные перед сохранением в Firebase:', pageData)
       try {
         const pageToSave = this.preparePageData(pageData);
-
-        console.log('После preparePageData:', pageToSave);
     
         pageToSave.blocks = pageToSave.blocks.map(block => ({
           id: block.id !== undefined ? block.id : this.getNextId(),
